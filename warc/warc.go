@@ -49,7 +49,7 @@ func ParseGzippedWarcGDoc(r io.ReadCloser, doc *gdoc.Doc) error {
 		return fmt.Errorf("reading line %d: %w", ln, err)
 	}
 	ln += 1
-	if bytes.HasPrefix(line, warcHeader) {
+	if !bytes.HasPrefix(line, warcHeader) {
 		return fmt.Errorf(
 			"did not find WARC header on line 1 -" +
 				"possibly corrupted WARC record")
