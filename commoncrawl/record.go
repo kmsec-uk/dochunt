@@ -10,11 +10,13 @@ import (
 // CDXRecord matches the JSON output
 // from the Common Crawl index
 type CDXRecord struct {
-	URL      string `json:"url"`
-	Filename string `json:"filename"`
-	Offset   string `json:"offset"`
-	Length   string `json:"length"`
-	Status   string `json:"status"`
+	URL          string `json:"url"`
+	Filename     string `json:"filename"`
+	Offset       string `json:"offset"`
+	Length       string `json:"length"`
+	Status       string `json:"status"`
+	MimeDetected string `json:"mime-detected"`
+	Encoding     string `json:"encoding"`
 }
 
 // FetchWARCItem returns the http response body as-is

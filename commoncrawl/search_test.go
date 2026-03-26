@@ -28,6 +28,26 @@ func TestSearch(t *testing.T) {
 	if count != 2 {
 		t.Fatalf("expected 2 results, got %d", count)
 	}
+	for r := range results {
+		if r.Error != nil {
+			t.Fatalf("record error: %v", err)
+		}
+		if r.Record.Encoding == "" {
+			t.Error("expected some encoding")
+		}
+		if r.Record.URL == "" {
+			t.Error("expected some URL")
+		}
+		if r.Record.Filename == "" {
+			t.Error("expected some Filename")
+		}
+		if r.Record.MimeDetected == "" {
+			t.Error("expected some MimeDetected")
+		}
+		if r.Record.Status == "" {
+			t.Error("expected some Status")
+		}
+	}
 }
 
 func TestReadWARCResponse(t *testing.T) {
