@@ -47,6 +47,9 @@ func TestSearch(t *testing.T) {
 		if r.Record.Status == "" {
 			t.Error("expected some Status")
 		}
+		if r.Record.Digest == "" {
+			t.Error("expected some Digest")
+		}
 	}
 }
 

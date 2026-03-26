@@ -17,6 +17,7 @@ type CDXRecord struct {
 	Status       string `json:"status"`
 	MimeDetected string `json:"mime-detected"`
 	Encoding     string `json:"encoding"`
+	Digest       string `json:"digest"`
 }
 
 // FetchWARCItem returns the http response body as-is
