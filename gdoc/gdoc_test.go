@@ -26,7 +26,10 @@ func TestGDocParse(t *testing.T) {
 			Links:     make([]string, 0),
 			ImageUrls: make([]string, 0),
 		}
-		g.ParseHtml(f)
+		err = g.ParseHtml(f)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		if len(g.Content) == 0 {
 			t.Fatalf("%s: should have some content", e.Name())

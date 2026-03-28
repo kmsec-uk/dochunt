@@ -18,7 +18,7 @@ import (
 var (
 	// https://docs.google.com/document/d/19gTpFORRvKgI0oIghM-GF-CFQS3R_ySp_ltzeCe6iHg/
 	// /                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	GoogleDocIdRegex = regexp.MustCompile(`\/d\/(.+?)\/`)
+	GoogleDocIdRegex = regexp.MustCompile(`docs\.google\.com\/document\/d\/(.+?)\/`)
 
 	// creation time from the script tag
 	// config['dct'] = 1.759713531746E12;
