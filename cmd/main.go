@@ -79,6 +79,11 @@ func main() {
 		if strings.Contains(res.Record.URL, "/export") {
 			continue
 		}
+		// skip /pub (publish) endpoints
+		// example: .../document/d/0B5LPyQqaZw-3cXRBT0kyNTh2TVU/pub
+		if strings.Contains(res.Record.URL, "/pub") {
+			continue
+		}
 		// exclute non-utf0
 		if res.Record.Encoding != "UTF-8" {
 			continue
