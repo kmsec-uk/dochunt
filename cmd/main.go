@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -54,19 +56,23 @@ func main() {
 		}
 		close(writerDone)
 	}()
-	// reuse the client from the commoncrawl default Client
-	httpClient := client.HTTPClient()
 
-	g := new(errgroup.Group)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	g, groupCtx := errgroup.WithContext(ctx)
 	g.SetLimit(5)
-	// count := 0
+
 	for res := range ch {
-		// if count == 20 {
-		// 	break
-		// }
-		// count += 1
+		if groupCtx.Err() != nil {
+			break
+		}
 		if err := res.Error; err != nil {
 			log.Printf("error: %v", err)
+			if errors.Is(err, commoncrawl.ErrRateLimitExhausted) {
+				log.Printf("cancelling all workers")
+				cancel()
+				break
+			}
 			continue
 		}
 		// skip Google Docs export endpoints
@@ -98,23 +104,30 @@ func main() {
 			}
 			doc := gdoc.NewDoc(m[1]).WithProvenance(*collection)
 
-			reader, err := res.Record.FetchWARCItem(httpClient)
+			reader, err := client.FetchWARCItem(&res.Record)
 			if err != nil {
 				log.Printf("error: doc %s: fetching %s: %v\n", doc.Id, res.Record.Filename, err)
-				return nil
+				return err
 			}
 			err = warc.ParseGzippedWarcGDoc(reader, doc)
 			if err != nil {
 				log.Printf("error: doc %s: parsing gzipped html stream: %v\n", doc.Id, err)
 				return nil
 			}
-			resultsCh <- ParsedPayload{doc, res.Record.Digest}
+			select {
+			case <-groupCtx.Done():
+				return groupCtx.Err()
+
+			case resultsCh <- ParsedPayload{doc, res.Record.Digest}:
+			}
 			return nil
 		})
 
 	}
 
-	g.Wait()
+	if err := g.Wait(); err != nil {
+		log.Fatalf("aborting: %v", err)
+	}
 	close(resultsCh)
 	<-writerDone
 	log.Println("finished processing")

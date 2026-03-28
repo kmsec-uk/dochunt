@@ -41,7 +41,7 @@ func (c *Client) FetchWARCItem(r *CDXRecord) (io.ReadCloser, error) {
 	req.Header.Add("user-agent", userAgent)
 	req.Header.Add("range", rangeHeader)
 
-	res, err := c.client.Do(req)
+	res, err := c.DoReq(req)
 	if err != nil {
 		return nil, fmt.Errorf("doing request: %w", err)
 	}
