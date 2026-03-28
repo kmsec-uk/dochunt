@@ -24,7 +24,7 @@ type CDXRecord struct {
 // for a given WARC offset.
 //
 // (note to self) don't forget to call .Close()!
-func (r *CDXRecord) FetchWARCItem(client *http.Client) (io.ReadCloser, error) {
+func (c *Client) FetchWARCItem(r *CDXRecord) (io.ReadCloser, error) {
 	offset, err := strconv.Atoi(r.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("strconv.Atoi: %w", err)
@@ -41,7 +41,7 @@ func (r *CDXRecord) FetchWARCItem(client *http.Client) (io.ReadCloser, error) {
 	req.Header.Add("user-agent", userAgent)
 	req.Header.Add("range", rangeHeader)
 
-	res, err := client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("doing request: %w", err)
 	}

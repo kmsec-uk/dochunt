@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/json"
-	"net/http"
 	"testing"
 )
 
@@ -55,11 +54,12 @@ func TestSearch(t *testing.T) {
 
 func TestReadWARCResponse(t *testing.T) {
 	content := `{"urlkey": "uk,kmsec,dprk-research)/", "timestamp": "20260212191712", "url": "https://dprk-research.kmsec.uk/", "mime": "text/html", "mime-detected": "text/html", "status": "200", "digest": "62RJY6M7QI7IVE2AGKM6543W5CCAX3YK", "length": "12579", "offset": "153149978", "filename": "crawl-data/CC-MAIN-2026-08/segments/1770395506235.44/warc/CC-MAIN-20260212175836-20260212205836-00647.warc.gz", "encoding": "UTF-8"}`
+	c := NewClient()
 	var r CDXRecord
 	if err := json.Unmarshal([]byte(content), &r); err != nil {
 		t.Fatal(err)
 	}
-	res, err := r.FetchWARCItem(http.DefaultClient)
+	res, err := c.FetchWARCItem(&r)
 	if err != nil {
 		t.Fatal(err)
 	}

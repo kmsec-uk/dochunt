@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const userAgent = "go: (kmsec.uk)"
+const userAgent = "go: kmsec.uk (contact: kmsec-uk@pm.me)"
 
 // SearchMetadata represents the response from index
 // when we request showNumPages=true.
