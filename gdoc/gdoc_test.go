@@ -1,7 +1,6 @@
 package gdoc
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -22,26 +21,30 @@ func TestGDocParse(t *testing.T) {
 			t.Fatal(err)
 		}
 		g := Doc{
-			Id:        "Test - " + e.Name(),
+			Id:        "",
 			Links:     make([]string, 0),
 			ImageUrls: make([]string, 0),
 		}
+		g.WithProvenance(e.Name())
 		err = g.ParseHtml(f)
 		if err != nil {
 			t.Fatal(err)
 		}
-
+		if g.Id == "" {
+			t.Errorf("%s: doc id should be present", g.Provenance)
+		}
+		if g.Timestamp == "" {
+			t.Errorf("%s: timestamp should be present", g.Provenance)
+		}
 		if len(g.Content) == 0 {
-			t.Fatalf("%s: should have some content", e.Name())
+			t.Fatalf("%s: should have some content", g.Provenance)
 		}
 		if len(g.PageTitle) == 0 {
-			t.Fatalf("%s: should have some page title", e.Name())
+			t.Fatalf("%s: should have some page title", g.Provenance)
 		}
 		if g.Revision == 0 {
-			t.Fatalf("%s: should have a non-zero Revision", e.Name())
+			t.Fatalf("%s: should have a non-zero Revision", g.Provenance)
 
 		}
-		fmt.Println(g.Links)
-		fmt.Println(g.ImageUrls)
 	}
 }

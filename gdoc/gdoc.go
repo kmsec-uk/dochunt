@@ -2,6 +2,7 @@ package gdoc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -16,6 +17,7 @@ import (
 )
 
 var (
+	// The ID extracted from a URL
 	// https://docs.google.com/document/d/19gTpFORRvKgI0oIghM-GF-CFQS3R_ySp_ltzeCe6iHg/
 	// /                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 	GoogleDocIdRegex = regexp.MustCompile(`docs\.google\.com\/document\/d\/(.+?)\/`)
@@ -23,11 +25,19 @@ var (
 	// creation time from the script tag
 	// config['dct'] = 1.759713531746E12;
 	// /               ^^^^^^^^^^^^^^^^^
-	docCreationTime  = regexp.MustCompile(`config\['dct'\]\s+\=\s+([\d\.E]+)`)
-	imageBlobUrls    = regexp.MustCompile(`"s-blob-v1-IMAGE[\w\-]+":("https:\/\/.+?")`)
-	embeddedLinks    = regexp.MustCompile(`{"lnk_type":0,"ulnk_url":("http.+?")}`)
-	embeddedText     = regexp.MustCompile(`{"ty":"is","ibi":\d+,"s":(".+?")}`)
-	embeddedRevision = regexp.MustCompile(`"revision":(\d+)}`)
+	docCreationTime         = regexp.MustCompile(`config\['dct'\]\s+\=\s+([\d\.E]+)`)
+	embeddedDocId           = regexp.MustCompile(`config\['bci'\]\s+=\s+'(.+?)'`)
+	imageBlobUrls           = regexp.MustCompile(`"s-blob-v1-IMAGE[\w\-]+":("https:\/\/.+?")`)
+	embeddedLinks           = regexp.MustCompile(`{"lnk_type":0,"ulnk_url":("http.+?")}`)
+	embeddedText            = regexp.MustCompile(`{"ty":"is","ibi":\d+,"s":(".+?[^\\]")}`)
+	embeddedRevision        = regexp.MustCompile(`"revision":(\d+)}`)
+	embeddedServerTimestamp = regexp.MustCompile(`"server_time_ms":(\d+),"`)
+)
+
+var (
+	ErrDocIdNotExtracted             = errors.New("document ID could not be extracted")
+	ErrServerTimestampNotExtracted   = errors.New("server timestamp could not be extracted")
+	ErrCreationTimestampNotExtracted = errors.New("creation timestamp could not be extracted")
 )
 
 type Doc struct {
@@ -45,6 +55,10 @@ type Doc struct {
 	ImageUrls     []string  `json:"image_urls"`             // image assets that are used in the doc, e.g. banner pictures
 }
 
+// NewDoc returns a pointer to a blank Doc struct.
+// If no document ID is known (e.g. you don't know the
+// Google Doc ID in advance), you can parse an empty `id` "",
+// and it will be populated by the parser.
 func NewDoc(id string) *Doc {
 	return &Doc{
 		Id:        id,
@@ -53,10 +67,26 @@ func NewDoc(id string) *Doc {
 	}
 }
 
+// WithProvenance populates the optional
+// Provenance field. This is useful for understanding
+// where you found the document / html
 func (d *Doc) WithProvenance(s string) *Doc {
 	d.Provenance = s
 	return d
 }
+
+// WithTimestamp populates the doc.Timestamp
+// field string. This is useful if you want to use
+// an alternative timestamp string, e.g. when the client
+// observed the HTML, rather than what time the server
+// reports.
+// if omitted, we extract the server timestamp and it's populated
+// with an RFC3339 UTC timestamp.
+func (d *Doc) WithTimestamp(s string) *Doc {
+	d.Timestamp = s
+	return d
+}
+
 func (d *Doc) ParseHtml(reader io.Reader) error {
 
 	doc, err := html.Parse(reader)
@@ -123,15 +153,23 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 			if strings.HasPrefix(n.FirstChild.Data, "DOCS_timing['sac']") {
 				// first get the doc creation time
 				m := docCreationTime.FindStringSubmatch(n.FirstChild.Data)
-				if len(m) < 2 {
-					return fmt.Errorf("creation time (from `config['dct']`) not found in script")
+				if len(m) != 2 {
+					return ErrCreationTimestampNotExtracted
 				}
 				t, err := stringToDate(m[1])
 				if err != nil {
 					return fmt.Errorf("parsing creation time from `%s`: %w", m[1], err)
 				} else {
-					// fmt.Println("creation time:", t.UTC())
 					d.Created = t
+				}
+				// embedded doc ID
+				// only parse if initialised with empty Id
+				if d.Id == "" {
+					docIdMatches := embeddedDocId.FindStringSubmatch(n.FirstChild.Data)
+					if len(docIdMatches) != 2 {
+						return ErrDocIdNotExtracted
+					}
+					d.Id = m[1]
 				}
 				// image blob urls
 				imageBlobMatches := imageBlobUrls.FindAllStringSubmatch(n.FirstChild.Data, -1)
@@ -151,6 +189,20 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 					t = strings.TrimSpace(t)
 					d.ImageUrls = append(d.ImageUrls, t)
 				}
+
+			}
+			// timestamp only parsed if it's not populated
+			if strings.HasPrefix(n.FirstChild.Data, "_docs_flag_initialData") && d.Timestamp == "" {
+				m := embeddedServerTimestamp.FindStringSubmatch(n.FirstChild.Data)
+				if len(m) != 2 {
+					return ErrServerTimestampNotExtracted
+				}
+				ts, err := stringToDate(m[1])
+				if err != nil {
+					return fmt.Errorf("parsing creation time from `%s`: %w", m[1], err)
+
+				}
+				d.Timestamp = ts.UTC().Format(time.RFC3339)
 			}
 			if strings.HasPrefix(n.FirstChild.Data, "DOCS_modelChunk = {") {
 				// text blobs
@@ -214,7 +266,7 @@ func stringToDate(s string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	// convert from seconds to ms
+	// convert from ms
 	t := time.UnixMilli(int64(f))
 	return t, nil
 }
