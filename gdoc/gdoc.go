@@ -87,6 +87,8 @@ func (d *Doc) WithTimestamp(s string) *Doc {
 	return d
 }
 
+// ParseHTML parses from an io.Reader to populate
+// the document struct
 func (d *Doc) ParseHtml(reader io.Reader) error {
 
 	doc, err := html.Parse(reader)
@@ -165,11 +167,11 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 				// embedded doc ID
 				// only parse if initialised with empty Id
 				if d.Id == "" {
-					docIdMatches := embeddedDocId.FindStringSubmatch(n.FirstChild.Data)
-					if len(docIdMatches) != 2 {
+					docIdMatch := embeddedDocId.FindStringSubmatch(n.FirstChild.Data)
+					if len(docIdMatch) != 2 {
 						return ErrDocIdNotExtracted
 					}
-					d.Id = m[1]
+					d.Id = docIdMatch[1]
 				}
 				// image blob urls
 				imageBlobMatches := imageBlobUrls.FindAllStringSubmatch(n.FirstChild.Data, -1)
