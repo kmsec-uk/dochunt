@@ -125,7 +125,12 @@ func (c *Client) DoReq(req *http.Request) (*http.Response, error) {
 		}
 		res, err := c.client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("doing request: %w", err)
+			err := c.backoff()
+			if err != nil {
+				return nil, fmt.Errorf("error backing off: %w: status code %d", err, res.StatusCode)
+			}
+			lastErr = err
+			continue
 		}
 		if res.StatusCode >= 200 && res.StatusCode < 300 {
 			c.recoverRate()
@@ -138,7 +143,7 @@ func (c *Client) DoReq(req *http.Request) (*http.Response, error) {
 
 			err := c.backoff()
 			if err != nil {
-				return nil, fmt.Errorf("%w: status code %d", err, res.StatusCode)
+				return nil, fmt.Errorf("error backing off: %w: status code %d", err, res.StatusCode)
 			}
 
 			lastErr = &HTTPError{
