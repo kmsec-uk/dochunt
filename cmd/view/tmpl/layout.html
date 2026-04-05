@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/static/favicon.svg" />
+    <link rel="stylesheet" href="/static/pico.min.css" />
+    <title>{{ .Title}} | dochunt</title>
+</head>
+
+<body>
+    <section class="container">
+        <button disabled>Total docs: {{.NumProcessedDocs}}</button>
+        <button disabled>Database size: {{.SizeOnDisk}}</button>
+            <button id="theme"></button>
+
+    </section>
+    <main class="container">
+        
+        <h1>{{ .Title }}</h1>
+        <hr />
+        <main>
+            {{template "main" .}}
+        </main>
+</body>
+
+</html>
+<script>
+    const turnOnTxt = "Light mode"
+    const turnOffTxt = "Dark mode"
+    let mediaQueryIsDark = false
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQueryIsDark = darkModeMediaQuery.matches
+    darkModeMediaQuery.addEventListener('change', (e) => {
+        mediaQueryIsDark = e.matches;
+    });
+    
+    const wantsDark = () => document.documentElement.dataset.theme === "dark" ?? mediaQueryIsDark
+    
+    const themeButton = document.querySelector("#theme")
+    
+    themeButton.textContent = wantsDark() ? turnOnTxt : turnOffTxt
+    
+    themeButton.addEventListener("click", () => {
+        var wasDark = wantsDark()
+        document.documentElement.dataset.theme = wasDark ? "light" : "dark"
+        themeButton.textContent = wasDark ? turnOnTxt : turnOffTxt
+    })
+
+</script>

@@ -113,7 +113,7 @@ type Source struct {
 	Timestamp string `json:"ts"`  // timestamp - the time the doc was observed
 }
 
-// returns a new Source object in string format ready for
+// returns a new Source object in []byte] format ready for
 // insertion into db
 func NewSource(src, id, ts string) ([]byte, error) {
 

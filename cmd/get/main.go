@@ -49,7 +49,7 @@ func init() {
 
 func main() {
 
-	dbPath := flag.String("db", "data/store.db", "path to database")
+	dbPath := flag.String("db", "../data/store.db", "path to database")
 
 	collection := flag.String("c", "CC-MAIN-2026-12", "commoncrawl collection to scrape")
 	flag.Parse()

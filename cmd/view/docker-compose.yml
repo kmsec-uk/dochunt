@@ -1,0 +1,20 @@
+services:
+  gdoc_srv:
+    build: .
+    container_name: web
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA_CUSTOM=/opt/custom
+    volumes:
+      - ../data/store.db:/app/store.db:ro
+    restart: always
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    command: tunnel --no-autoupdate run
+    restart: always
+secrets:
+  cloudflared_token:
+    file: ./.tunneltoken
