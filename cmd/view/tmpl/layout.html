@@ -9,44 +9,95 @@
     <link rel="stylesheet" href="/static/pico.min.css" />
     <title>{{ .Title}} | dochunt</title>
 </head>
+<style>
+    header {
+        height: 3rem;
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    
+    #stats {
+        display:flex;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        font-size: small;
+    }
+
+    #stats > p {
+        padding-inline: 0.2rem;
+        padding-block:0.2rem;
+        white-space: nowrap;
+        z-index: -1;
+    }
+
+    #theme {
+        display: block;
+        height: 1.5rem;
+        padding-inline: 0.3rem;
+        padding-block: 0.1rem;
+        text-align: center;
+        font-size: smaller;
+        white-space: nowrap;
+    }
+
+    footer>small {
+        display: block;
+    }
+</style>
 
 <body>
-    <section class="container">
-        <button disabled>Total docs: {{.NumProcessedDocs}}</button>
-        <button disabled>Database size: {{.SizeOnDisk}}</button>
-            <button id="theme"></button>
-
-    </section>
+    <header class="container">
+        <div>
+        <a  href="/" title="dochunt: a collection of parsed Google Docs content for your perusal">
+            <code><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"><g fill="none" stroke="#34A853" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M15 2.5V4c0 1.414 0 2.121.44 2.56C15.878 7 16.585 7 18 7h1.5"/><path d="M4 16V8c0-2.828 0-4.243.879-5.121C5.757 2 7.172 2 10 2h4.172c.408 0 .613 0 .797.076c.183.076.328.22.617.51l3.828 3.828c.29.29.434.434.51.618c.076.183.076.388.076.796V16c0 2.828 0 4.243-.879 5.121C18.243 22 16.828 22 14 22h-4c-2.828 0-4.243 0-5.121-.879C4 20.243 4 18.828 4 16m4-5h8m-8 3h8m-8 3h4.17"/></g></svg>dochunt</code>
+        </a>
+            <div id="stats">
+                <p>Total docs: {{.NumProcessedDocs}}</p>
+                <p>DB size: {{.SizeOnDisk}}</p>
+            </div>
+        </div>
+        <button class="secondary" id="theme">Change theme (requires JavaScript)</button>
+    </header>
+    <hr />
     <main class="container">
-        
+
         <h1>{{ .Title }}</h1>
-        <hr />
-        <main>
-            {{template "main" .}}
-        </main>
+
+        {{template "main" .}}
 </body>
 
 </html>
 <script>
     const turnOnTxt = "Light mode"
     const turnOffTxt = "Dark mode"
+    // initial
     let mediaQueryIsDark = false
+
     const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
     mediaQueryIsDark = darkModeMediaQuery.matches
+
     darkModeMediaQuery.addEventListener('change', (e) => {
         mediaQueryIsDark = e.matches;
     });
-    
-    const wantsDark = () => document.documentElement.dataset.theme === "dark" ?? mediaQueryIsDark
-    
-    const themeButton = document.querySelector("#theme")
-    
-    themeButton.textContent = wantsDark() ? turnOnTxt : turnOffTxt
-    
-    themeButton.addEventListener("click", () => {
-        var wasDark = wantsDark()
-        document.documentElement.dataset.theme = wasDark ? "light" : "dark"
-        themeButton.textContent = wasDark ? turnOnTxt : turnOffTxt
-    })
 
+    const isDark = () => document.documentElement.dataset.theme === "dark" || mediaQueryIsDark || localStorage.getItem('theme') === "dark"
+
+    // set in case media query / localstorage is dark
+    if (isDark()) {
+        document.documentElement.dataset.theme = "dark"
+    }
+    // changer
+    const themeButton = document.querySelector("#theme")
+
+    themeButton.textContent = isDark() ? turnOnTxt : turnOffTxt
+
+    themeButton.addEventListener("click", () => {
+        var wasDark = isDark()
+        document.documentElement.dataset.theme = wasDark ? "light" : "dark"
+        themeButton.textContent = wasDark ? turnOffTxt : turnOnTxt
+        localStorage.setItem("theme", wasDark ? "light" : "dark")
+    })
 </script>

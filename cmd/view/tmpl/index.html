@@ -1,40 +1,146 @@
 {{define "main"}}
-    <table>
-        <thead>
-            <tr>
-                <th scope="col">Timestamp</th>
-                <th scope="col">Source</th>
-                <th scope="col">Doc</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{range .Rows}}
-            <tr>
-                <td>{{.Timestamp}}</td>
-                <td>{{.Source}}</td>
-                <td class="doc">
-                    <em>{{.DocTitle}}</em>
-                    <code>{{.DocID}}</code>
-                    <small>{{.Description}}</small>
-                </td>
-            </tr>
-            {{end}}
-        </tbody>
-    </table>
-    
-    <br>
-    {{if .NextTS}}
-        <a href="/?ts={{.NextTS}}">Next 100 Items &gt;</a>
-    {{else}}
-        <p>End of results.</p>
-    {{end}}
-    <style>
-        td.doc {
-    display: flex;
-    flex: auto;
-      flex-direction: column;
-    justify-content: center;
-    gap: 1rem;
-}
-    </style>
+<p>Explore my collection of parsed Google Docs</p>
+<section id="search">
+    <form role="search" method="GET">
+        <input type="search" name="q" placeholder="Search" value="{{.SearchQuery}}">
+        <button type="submit">search</button>
+    </form>
+    <details>
+        <summary>
+            ☝ Search help and examples
+        </summary>
+
+        <p>You can run full text searches on <b>content</b>, <b>title</b>, and <b>links</b>.</p>
+        <p>Results are shown in reverse chronological order of when they were observed.
+            Pages are 100 items long. These settings are hardcoded and cannot be changed.
+        </p>
+        <p>Below are some example searches to help you get started:</p>
+        <small>
+            <ul>
+                <li><mark>"amex"</mark> | <a href="/?q=amex">Documents containing <i>amex</i></a></li>
+                <li><mark>title:"*.docx"</mark> | <a href="/?q=title:%22*.docx%22">Documents with title ending in
+                        <i>.docx</i></a></li>
+                <li><mark>links:"https://github.com/*"</mark> | <a href="/?q=links:%22https://github.com/*%22">Documents
+                        containing an external link to GitHub</a></li>
+                <li><mark>title:interview links:github</mark> | <a href="/?q=title:interview%20links:github">Title
+                        contains <em>interview</em> and a link contains <em>github</em></a></li>
+            </ul>
+        </small>
+        <p>Under the hood, searches are run using SQLITE's full text search
+            (fts5) extension. Refer to <a title="sqlite fts5 documentation"
+                href="https://www.sqlite.org/fts5.html">SQLITE's documentation</a> for search syntax help.</p>
+        <p>If you'd like an AI assistant to help you explore this dataset, try this prompt below:</p>
+        <div id="promptcontainer">
+            <button type="button" title="copy sample prompt to clipboard" id="copyprompt">copy to clipboard</button>
+        </div>
+        <pre><code id="prompt">## Google Docs full text search help
+I'm exploring a dataset of parsed Google Docs held in an sqlite
+database as an end-user. The front-end is a parameterised fts5 query.
+
+The database uses the following fts5 schema:
+
+```
+CREATE VIRTUAL TABLE IF NOT EXISTS docs_fts USING fts5(
+    id UNINDEXED,
+    revision UNINDEXED,
+    title,
+    content,
+	links
+);
+```
+Please help me create queries for this parameterised fts5 query (`WHERE docs_fts MATCH ?`).
+
+I have no access to the underlying sqlite database as an end-user so don't provide 
+any implementation tips or comments.
+
+Provide some example queries that demonstrate fts5 query syntax, like `title:bitcoin`.
+Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</code></pre>
+    </details>
+</section>
+{{range .Rows}}
+<article>
+    <header>
+
+        <hgroup>
+            <h4>{{.DocTitle}}</h4>
+            <a href="#">View document</a>
+        </hgroup>
+    </header>
+    <p class="content">{{.Description}}</p>
+    <footer>
+        <small class="detail"><span class="src">{{.Source}}</span> observed this document on
+            <time>{{.Timestamp}}</time></small>
+        <small>Doc ID: <code>{{.DocID}}</code> | Revision: <code>{{.Revision}}</code></small>
+    </footer>
+</article>
+{{end}}
+
+<br>
+{{if .NextTS}}
+<a href="/?q={{.SearchQuery}}&ts={{.NextTS}}">Next 100 Items &gt;</a>
+{{else}}
+<p>End of results.</p>
+{{end}}
+<style>
+    section#search {
+        margin-block: 4rem;
+    }
+
+    article>header {
+        display: block;
+        height: fit-content;
+        overflow: auto;
+    }
+
+    hgroup>h4 {
+        white-space: nowrap;
+    }
+
+    span.src {
+        color: var(--pico-secondary);
+    }
+
+    p.content {
+        font-size: 0.8rem;
+        max-height: 6rem;
+        overflow: auto;
+    }
+
+    div#promptcontainer {
+        background-color: var(--pico-secondary);
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+        width: 100%;
+        height: 2rem;
+        position: relative;
+    }
+
+    button#copyprompt {
+        position: absolute;
+        right: 0rem;
+        background-color: var(--pico-secondary-background);
+        /* color: var(--pico-secondary); */
+        width: 10rem;
+        font-size: 0.8rem;
+        padding-inline: 1rem;
+        padding-block: 0.2rem;
+        height: 2rem;
+        border: 0;
+        border-radius: 0;
+        border-top-right-radius: 0.5rem;
+    }
+
+    #prompt {
+        font-size: 0.8rem;
+    }
+</style>
+<script>
+    var copyBtn = document.querySelector("#copyprompt")
+    var promptContent = document.querySelector("#prompt").textContent
+    copyBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(promptContent)
+        copyBtn.textContent = "copied!"
+        setTimeout(() => { copyBtn.textContent = "copy to clipboard" }, 800)
+    })
+</script>
 {{end}}

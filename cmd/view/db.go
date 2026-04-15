@@ -2,11 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
+	"github.com/dustin/go-humanize"
 	_ "modernc.org/sqlite"
 )
 
@@ -22,21 +27,25 @@ func ensureDirExists(dir string) {
 type DB struct {
 	db               *sql.DB
 	path             string
-	SizeOnDisk       string
-	NumProcessedDocs int32
+	SizeOnDisk       atomic.Value
+	NumProcessedDocs atomic.Uint32
 	stmtStats        *sql.Stmt
 }
 
-// query for inserting a document. sepearated out for readability
-
-func (d *DB) dbSize() {
+// return the database size
+func (d *DB) dbSize() error {
 	f, err := os.Stat(d.path)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	// b / kb / mb
-	i := f.Size() / 1024 / 1024
-	d.SizeOnDisk = fmt.Sprintf("%dMB", i)
+	d.SizeOnDisk.Store(humanize.Bytes(uint64(f.Size())))
+	var numProcessedDocs uint32
+	err = d.stmtStats.QueryRow().Scan(&numProcessedDocs)
+	if err != nil {
+		return err
+	}
+	d.NumProcessedDocs.Store(numProcessedDocs)
+	return nil
 }
 func NewDB(dbPath string) (*DB, error) {
 	ensureDirExists(filepath.Dir(dbPath))
@@ -50,15 +59,12 @@ func NewDB(dbPath string) (*DB, error) {
 		path: dbPath,
 	}
 
-	DB.dbSize()
-
 	stmtStats, err := db.Prepare(`SELECT COUNT(*) FROM processed`)
 	if err != nil {
 		return nil, err
 	}
 	DB.stmtStats = stmtStats
-
-	err = DB.stmtStats.QueryRow().Scan(&DB.NumProcessedDocs)
+	err = DB.dbSize()
 	if err != nil {
 		return nil, err
 	}
@@ -72,72 +78,71 @@ type Source struct {
 	Timestamp string `json:"ts"`  // timestamp - the time the doc was observed
 }
 
-// DocumentRow represents a single row in our paginated view
+// DocumentRow represents a single row in the view
 type DocumentRow struct {
-	Timestamp   string
-	Source      string
-	DocID       string
-	DocTitle    string
-	Description string
+	Timestamp   string `json:"timestamp"`
+	Source      string `json:"source"`
+	DocID       string `json:"id"`
+	DocTitle    string `json:"title"`
+	Description string `json:"snippet"`
+	Revision    string `json:"revision"`
 }
 
 // PageData holds the data for the HTML template
 type PageData struct {
 	Title            string
+	SearchQuery      string
 	Rows             []DocumentRow
 	NextTS           string
 	SizeOnDisk       string
-	NumProcessedDocs int32
+	NumProcessedDocs uint32
 }
 
-func (d *DB) ExplorePage(ts string) (*PageData, error) {
-	var rows *sql.Rows
-	var queryErr error
+// reference query:
+// WITH expanded AS
+// (
+//        SELECT Json_extract(value, '$.ts')  AS timestamp,
+//               Json_extract(value, '$.src') AS source,
+//               docs.id                      AS id,
+//               docs.revision                AS revision,
+//               docs.og_title                AS doc_title,
+//               docs.og_description          AS description
+//        FROM   docs,
+//               json_each(docs.sources) )
+// SELECT   expanded.id,
+//          expanded.revision,
+//          title,
+//          description,
+//          timestamp,
+//          source
+// FROM     docs_fts f
+// JOIN     expanded
+// ON       f.id = expanded.id
+// AND      f.revision = expanded.revision
+//          --    WHERE docs_fts MATCH "*"
+// ORDER BY rank ASC,
+//          timestamp DESC
+//          LIMIT 100
 
-	// Base query uses a CTE to unnest the sources array and extract the fields
-	// We use standard string comparison for keyset pagination on RFC3339 timestamps
-	baseQuery := `
-			WITH expanded AS (
-				SELECT 
-					json_extract(value, '$.ts') as timestamp,
-					json_extract(value, '$.src') as source,
-					docs.id as doc_id,
-					docs.og_title as doc_title,
-					docs.og_description as description
-				FROM docs, json_each(docs.sources)
-			)
-			SELECT timestamp, source, doc_id, doc_title, description 
-			FROM expanded
-		`
+func (d *DB) ExplorePage(ts, ftsQuery string) (*PageData, error) {
 
-	if ts != "" {
-		query := baseQuery + ` 
-				WHERE timestamp < ?
-				ORDER BY timestamp DESC
-				LIMIT 100`
-		rows, queryErr = d.db.Query(query, ts)
-	} else {
-		query := baseQuery + ` 
-				ORDER BY timestamp DESC
-				LIMIT 100`
-		rows, queryErr = d.db.Query(query)
-	}
-
-	if queryErr != nil {
-		return nil, queryErr
+	rows, err := d.doExploreQuery(ts, ftsQuery)
+	if err != nil {
+		return nil, err
 	}
 
 	defer rows.Close()
 
 	var pageData PageData
 	pageData.Title = "Explore"
-	pageData.NumProcessedDocs = d.NumProcessedDocs
-	pageData.SizeOnDisk = d.SizeOnDisk
+	pageData.NumProcessedDocs = d.NumProcessedDocs.Load()
+	pageData.SizeOnDisk = d.SizeOnDisk.Load().(string)
+	pageData.SearchQuery = ftsQuery
 	var lastTS string
 
 	for rows.Next() {
 		var row DocumentRow
-		if err := rows.Scan(&row.Timestamp, &row.Source, &row.DocID, &row.DocTitle, &row.Description); err != nil {
+		if err := rows.Scan(&row.DocID, &row.Revision, &row.DocTitle, &row.Description, &row.Timestamp, &row.Source); err != nil {
 			log.Printf("Row scan error: %v", err)
 			continue
 		}
@@ -152,4 +157,90 @@ func (d *DB) ExplorePage(ts string) (*PageData, error) {
 		pageData.NextTS = lastTS
 	}
 	return &pageData, nil
+}
+
+func (d *DB) ExploreJSON(ts, ftsQuery string, w http.ResponseWriter) error {
+	rows, err := d.doExploreQuery(ts, ftsQuery)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var row DocumentRow
+		if err := rows.Scan(&row.DocID, &row.Revision, &row.DocTitle, &row.Description, &row.Timestamp, &row.Source); err != nil {
+			return fmt.Errorf("Row scan error: %w", err)
+		}
+		b, err := json.Marshal(row)
+		if err != nil {
+			return fmt.Errorf("json.Marshal error: %w", err)
+		}
+		if _, err := w.Write(b); err != nil {
+			return err
+		}
+		if _, err := w.Write([]byte("\r\n")); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// helper function to create and perform the sql query
+// as there are an exponential number of different ways
+func (d *DB) doExploreQuery(ts, ftsQuery string) (*sql.Rows, error) {
+
+	baseSelect := `
+		SELECT 
+			d.id,
+			d.revision,
+			d.og_title AS doc_title,
+			d.og_description AS description,
+			json_extract(j.value, '$.ts') AS timestamp,
+			json_extract(j.value, '$.src') AS source
+		FROM docs d
+		JOIN json_each(d.sources) j
+	`
+
+	if ts == "" && ftsQuery == "" {
+		query := baseSelect + ` ORDER BY timestamp DESC LIMIT 100`
+		return d.db.Query(query)
+	}
+
+	if ts == "" && ftsQuery != "" {
+		query := `
+			SELECT 
+				d.id, d.revision, d.og_title AS doc_title, d.og_description AS description,
+				json_extract(j.value, '$.ts') AS timestamp, json_extract(j.value, '$.src') AS source
+			FROM docs_fts f
+			JOIN docs d ON f.id = d.id AND f.revision = d.revision
+			JOIN json_each(d.sources) j
+			WHERE docs_fts MATCH ?
+			ORDER BY rank, timestamp DESC
+			LIMIT 100
+		`
+		return d.db.Query(query, ftsQuery)
+	}
+
+	if ts != "" && ftsQuery != "" {
+		query := `
+			SELECT 
+				d.id, d.revision, d.og_title AS doc_title, d.og_description AS description,
+				json_extract(j.value, '$.ts') AS timestamp, json_extract(j.value, '$.src') AS source
+			FROM docs_fts f
+			JOIN docs d ON f.id = d.id AND f.revision = d.revision
+			JOIN json_each(d.sources) j
+			WHERE docs_fts MATCH ? AND json_extract(j.value, '$.ts') < ?
+			ORDER BY rank, timestamp DESC
+			LIMIT 100
+		`
+		return d.db.Query(query, ftsQuery, ts)
+	}
+
+	if ts != "" && ftsQuery == "" {
+		query := baseSelect + ` WHERE timestamp < ? ORDER BY timestamp DESC LIMIT 100`
+		return d.db.Query(query, ts)
+	}
+
+	return nil, errors.New("unreachable code reached")
 }

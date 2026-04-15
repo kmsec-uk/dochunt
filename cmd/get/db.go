@@ -47,6 +47,31 @@ var dsn string = "?_pragma=journal_mode(WAL)&" +
 	"_pragma=busy_timeout(5000)&" +
 	"_pragma=synchronous(FULL)"
 
+var ftsCreate string = `
+CREATE VIRTUAL TABLE IF NOT EXISTS docs_fts USING fts5(
+    id UNINDEXED,
+    revision UNINDEXED,
+    title,
+    content,
+	links
+);`
+
+var ftsBackfill string = `
+INSERT INTO docs_fts(id, revision, title, content, links)
+SELECT id, revision, og_title, content, links FROM docs;
+`
+var ftsInsertTrigger string = `
+CREATE TRIGGER IF NOT EXISTS docs_fts_insert AFTER INSERT ON docs BEGIN
+	INSERT INTO docs_fts(id, revision, title, content, links)
+    VALUES (new.id, new.revision, new.og_title, new.content, new.links);
+END;
+`
+var ftsDeleteTrigger string = `
+CREATE TRIGGER IF NOT EXISTS docs_fts_delete AFTER DELETE ON docs BEGIN
+    DELETE FROM docs_fts WHERE id = old.id AND revision = old.revision;
+END;
+`
+
 func NewDB(dbPath string) (*DB, error) {
 	ensureDirExists(filepath.Dir(dbPath))
 	db, err := sql.Open("sqlite", "file:"+dbPath+dsn)
@@ -72,6 +97,10 @@ func NewDB(dbPath string) (*DB, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("setting up db: %w", err)
+	}
+	_, err = db.Exec(ftsCreate + ftsBackfill + ftsInsertTrigger + ftsDeleteTrigger)
+	if err != nil {
+		return nil, fmt.Errorf("setting up fts: %w", err)
 	}
 	db.SetMaxOpenConns(1)
 	DB := &DB{db: db}

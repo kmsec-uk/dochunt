@@ -58,6 +58,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("init db: %v", err)
 	}
+	log.Println("database setup complete, starting collection")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

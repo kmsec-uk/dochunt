@@ -10,6 +10,7 @@ import (
 var content embed.FS
 
 var (
-	layout = template.Must(template.ParseFS(content, "tmpl/layout.html"))
-	index  = template.Must(template.Must(layout.Clone()).ParseFS(content, "tmpl/index.html"))
+	layout   = template.Must(template.ParseFS(content, "tmpl/layout.html"))
+	index    = template.Must(template.Must(layout.Clone()).ParseFS(content, "tmpl/index.html"))
+	notfound = template.Must(template.Must(layout.Clone()).ParseFS(content, "tmpl/notfound.html"))
 )
