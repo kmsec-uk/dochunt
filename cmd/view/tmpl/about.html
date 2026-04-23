@@ -1,0 +1,18 @@
+{{define "main"}}
+<div class="faq">
+    {{range .FAQs}}
+    <article id="{{.Heading}}">
+        <header>
+            <h3>{{.Heading}}</h3>
+        </header>
+        {{.Content}}
+    </article>
+    {{end}}
+</div>
+{{end}}
+
+<style>
+    .faq {
+
+    }
+</style>

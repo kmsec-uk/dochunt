@@ -1,0 +1,123 @@
+{{define "main"}}
+<section id="summary">
+    <h4>Summary</h4>
+    <table>
+        <tr>
+            <td>Google Docs ID</td>
+            <td><code>{{.Id}}</code></td>
+        </tr>
+        <tr>
+            <td>Created</td>
+            <td>{{(index .Instances 0).Created}}</td>
+        </tr>
+                <tr>
+            <td>Last seen</td>
+            <td>{{.LastSeen}}</td>
+        </tr>
+        <tr>
+            <td>Revisions on <code class="dochunt">dochunt</code></td>
+            <td>{{len .Instances}}</td>
+        </tr>
+    </table>
+    <a href="https://docs.google.com/document/d/{{.Id}}" target="_blank"><p>Open in Google Docs <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g class="open-in-new-tab-outline"><g fill="currentColor" fill-rule="evenodd" class="Vector" clip-rule="evenodd"><path d="M5 4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5.263a1 1 0 1 1 2 0V19a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3h5.017a1 1 0 1 1 0 2z"/><path d="M21.411 2.572a.963.963 0 0 1 0 1.36l-8.772 8.786a.96.96 0 0 1-1.358 0a.963.963 0 0 1 0-1.36l8.773-8.786a.96.96 0 0 1 1.357 0"/><path d="M21.04 2c.53 0 .96.43.96.962V8c0 .531-.47 1-1 1s-1-.469-1-1V4h-4c-.53 0-1-.469-1-1s.43-1 .96-1z"/></g></g></svg></p></a>
+    <h4>Skip to revision</h4>
+    {{range .Instances}}
+    <ul>
+        <a title="jump to view revision {{.Revision}}" href="#{{.Revision}}">
+            <li>Revision {{.Revision}} | {{.Title}}</li>
+        </a>
+    </ul>
+    {{end}}
+    <details class="question">
+        <summary>
+            ☝ What does "revision" mean?
+        </summary>
+        <p>Throughout the lifetime of a document, it may undergo several revisions by editors.
+            A larger revision number means more edits to a document.</p>
+        <p>Observers may see different revisions of the same document when visiting it over
+            time, so we can use the revision as a chronological marker, which helps inform us of the document's lifecycle.</p>
+
+        <small>Note: imported documents (i.e. .docx) typically come with a standard revision of <b>1</b>.</small>
+    </details>
+</section>
+{{range .Instances}}
+<article id="{{.Revision}}">
+    <header>
+        <hgroup>
+            <h4>{{.Title}}</h4>
+            <p>Revision {{.Revision }}</p>
+        </hgroup>
+    </header>
+    <h6>Content</h6>
+    <p class="content">{{.Content}}</p>
+    {{with .Links}}
+    <div class="details">
+
+        <h6>Links</h6>
+        <ul>
+            {{range .}}
+            <li>{{.}}</li>
+            {{end}}
+        </ul>
+
+    </div>
+    {{end}}
+    <footer class="sources">
+        <h6>Observers</h6>
+        <ul>
+            {{range .Sources}}
+            <li>{{.Src}} ({{.Id}}) <code>{{.Timestamp.Format "2006-01-02 15:04:05"}}</code></li>
+            {{end}}
+        </ul>
+
+    </footer>
+</article>
+<a class="linktop" href="#summary"><small>&#8593; back to top</small></a>
+{{end}}
+<style>
+    article>header {
+        display: block;
+        height: fit-content;
+        overflow: auto;
+    }
+
+    hgroup>h4 {
+        white-space: nowrap;
+    }
+
+    hgroup>p {
+        font-size: smaller;
+    }
+
+    #summary {
+        margin-bottom: 3rem;
+    }
+
+    .question {
+        margin-top: 1rem;
+    }
+
+    .content {
+        font-size: 0.8rem;
+        line-height: 1.2rem;
+    }
+
+    div.details {
+        font-size: 0.7rem;
+    }
+
+    div.details>ul {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        row-gap: 1rem;
+        column-gap: 2rem;
+        word-break: break-all;
+    }
+
+    .linktop {
+        font-size: smaller;
+        display: block;
+        margin-bottom: 2rem;
+    }
+</style>
+{{end}}

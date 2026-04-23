@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync/atomic"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	_ "modernc.org/sqlite"
@@ -30,6 +32,7 @@ type DB struct {
 	SizeOnDisk       atomic.Value
 	NumProcessedDocs atomic.Uint32
 	stmtStats        *sql.Stmt
+	stmtDocsById     *sql.Stmt
 }
 
 // return the database size
@@ -68,14 +71,13 @@ func NewDB(dbPath string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	stmtDocsById, err := db.Prepare(`SELECT id, revision, created, og_title, og_description, content, links, image_urls, sources FROM docs WHERE id = ? ORDER BY revision DESC`)
+	if err != nil {
+		return nil, err
+	}
+	DB.stmtDocsById = stmtDocsById
 
 	return DB, nil
-}
-
-type Source struct {
-	Src       string `json:"src"` // source - e.g. commoncrawl
-	Id        string `json:"id"`  // id that narrows down the source - e.g. the commoncrawl dataset name
-	Timestamp string `json:"ts"`  // timestamp - the time the doc was observed
 }
 
 // DocumentRow represents a single row in the view
@@ -88,43 +90,114 @@ type DocumentRow struct {
 	Revision    string `json:"revision"`
 }
 
-// PageData holds the data for the HTML template
+// PageData holds the data for the base HTML template
 type PageData struct {
 	Title            string
-	SearchQuery      string
-	Rows             []DocumentRow
-	NextTS           string
 	SizeOnDisk       string
 	NumProcessedDocs uint32
 }
+type IndexPage struct {
+	PageData
+	SearchQuery string
+	Rows        []DocumentRow
+	NextTS      string
+}
+type JsonArrayString []string
 
-// reference query:
-// WITH expanded AS
-// (
-//        SELECT Json_extract(value, '$.ts')  AS timestamp,
-//               Json_extract(value, '$.src') AS source,
-//               docs.id                      AS id,
-//               docs.revision                AS revision,
-//               docs.og_title                AS doc_title,
-//               docs.og_description          AS description
-//        FROM   docs,
-//               json_each(docs.sources) )
-// SELECT   expanded.id,
-//          expanded.revision,
-//          title,
-//          description,
-//          timestamp,
-//          source
-// FROM     docs_fts f
-// JOIN     expanded
-// ON       f.id = expanded.id
-// AND      f.revision = expanded.revision
-//          --    WHERE docs_fts MATCH "*"
-// ORDER BY rank ASC,
-//          timestamp DESC
-//          LIMIT 100
+func (s *JsonArrayString) Scan(i any) error {
+	if reflect.TypeOf(i).String() != "string" {
+		return errors.New("JsonArrayString: Scan(): unexpected type")
+	}
+	if err := json.Unmarshal([]byte(i.(string)), &s); err != nil {
+		return err
+	}
+	return nil
+}
 
-func (d *DB) ExplorePage(ts, ftsQuery string) (*PageData, error) {
+type JsonArraySource []Source
+
+func (s *JsonArraySource) Scan(i any) error {
+	if reflect.TypeOf(i).String() != "string" {
+		return errors.New("JsonArraySource: Scan(): unexpected type")
+	}
+	if err := json.Unmarshal([]byte(i.(string)), &s); err != nil {
+		return err
+	}
+	return nil
+}
+
+type DocInstance struct {
+	Id          string          `json:"id"`
+	Title       string          `json:"title"`
+	Revision    string          `json:"revision"`
+	Created     string          `json:"created"`
+	Description string          `json:"description"`
+	Content     string          `json:"content"`
+	Links       JsonArrayString `json:"links"`
+	ImageUrls   JsonArrayString `json:"images"`
+	Sources     JsonArraySource `json:"sources"`
+}
+
+// DocPageData holds the data for a specific document
+type DocPageData struct {
+	PageData
+	Id        string        `json:"id"`
+	LastSeen  string        `json:"last_seen"`
+	Instances []DocInstance `json:"instances"`
+}
+type Timestamp struct {
+	time.Time
+}
+
+func (t *Timestamp) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + t.UTC().Format(time.RFC3339) + `"`), nil
+}
+
+type Source struct {
+	Src       string    `json:"src"` // source - e.g. commoncrawl
+	Id        string    `json:"id"`  // id that narrows down the source - e.g. the commoncrawl dataset name
+	Timestamp Timestamp `json:"ts"`  // timestamp - the time the doc was observed
+}
+
+// 1qk9pmMy966ue1iSSqGQ-61f19s99dBQ5NMo_Rz9UBY0
+func (d *DB) DocPage(id string) (*DocPageData, error) {
+	p := &DocPageData{
+		Instances: make([]DocInstance, 0),
+	}
+	p.SizeOnDisk = d.SizeOnDisk.Load().(string)
+	p.NumProcessedDocs = d.NumProcessedDocs.Load()
+	rows, err := d.stmtDocsById.Query(id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var doc DocInstance
+		//`SELECT id, revision, created, og_title, og_description, content, links, image_urls, sources FROM docs WHERE id = ? ORDER BY revision DESC`
+		if err := rows.Scan(&doc.Id, &doc.Revision, &doc.Created, &doc.Title, &doc.Description, &doc.Content, &doc.Links, &doc.ImageUrls, &doc.Sources); err != nil {
+			return nil, err
+		}
+		p.Instances = append(p.Instances, doc)
+	}
+	if len(p.Instances) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	latest := p.Instances[0]
+	p.Id = latest.Id
+	p.Title = latest.Title
+	lastSeen := time.Time{}
+	for _, s := range latest.Sources {
+		if s.Timestamp.After(lastSeen) {
+			lastSeen = s.Timestamp.Time
+		}
+	}
+	p.LastSeen = lastSeen.UTC().Format(time.RFC3339)
+	return p, nil
+}
+
+// ExplorePage creates the PageData for the index page (the query
+// view)
+func (d *DB) ExplorePage(ts, ftsQuery string) (*IndexPage, error) {
 
 	rows, err := d.doExploreQuery(ts, ftsQuery)
 	if err != nil {
@@ -133,7 +206,7 @@ func (d *DB) ExplorePage(ts, ftsQuery string) (*PageData, error) {
 
 	defer rows.Close()
 
-	var pageData PageData
+	var pageData IndexPage
 	pageData.Title = "Explore"
 	pageData.NumProcessedDocs = d.NumProcessedDocs.Load()
 	pageData.SizeOnDisk = d.SizeOnDisk.Load().(string)
@@ -159,6 +232,7 @@ func (d *DB) ExplorePage(ts, ftsQuery string) (*PageData, error) {
 	return &pageData, nil
 }
 
+// The query view's (index page) JSON interface
 func (d *DB) ExploreJSON(ts, ftsQuery string, w http.ResponseWriter) error {
 	rows, err := d.doExploreQuery(ts, ftsQuery)
 	if err != nil {

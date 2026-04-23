@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -64,6 +67,7 @@ func main() {
 		ftsQuery := r.URL.Query().Get("q")
 		wants := r.URL.Query().Get("format")
 		if wants == "json" {
+			w.Header().Set("Content-Type", "application/json")
 			err := DB.ExploreJSON(cursorTS, ftsQuery, w)
 			if err != nil {
 				log.Printf("error producing json results: %v", err)
@@ -81,6 +85,54 @@ func main() {
 			log.Printf("error in template execution: %v", err)
 		}
 	})
+	mux.HandleFunc("GET /d/{doc}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("doc")
+		p, err := DB.DocPage(id)
+		if err != nil {
+			if errors.Is(sql.ErrNoRows, err) {
+
+				docNotFound := &PageData{
+					Title:            "Document not found",
+					SizeOnDisk:       DB.SizeOnDisk.Load().(string),
+					NumProcessedDocs: DB.NumProcessedDocs.Load(),
+				}
+				w.WriteHeader(http.StatusNotFound)
+				if err := notfound.Execute(w, docNotFound); err != nil {
+					log.Printf("error in template execution: %v", err)
+				}
+				return
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		wants := r.URL.Query().Get("format")
+		if wants == "json" {
+			w.Header().Set("Content-Type", "application/json")
+
+			if err := json.NewEncoder(w).Encode(p); err != nil {
+				log.Printf("error producing json page: %v", err)
+			}
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := doc.Execute(w, p); err != nil {
+			log.Printf("error in template execution: %v", err)
+		}
+	})
+	// about
+	mux.HandleFunc("GET /about", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		pageData := &AboutPage{}
+		pageData.FAQs = AboutFAQs
+		pageData.Title = "About"
+		pageData.NumProcessedDocs = DB.NumProcessedDocs.Load()
+		pageData.SizeOnDisk = DB.SizeOnDisk.Load().(string)
+
+		if err := about.Execute(w, pageData); err != nil {
+			log.Printf("error in template execution: %v", err)
+		}
+	})
 	// 404
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		p := &PageData{
@@ -88,6 +140,7 @@ func main() {
 			SizeOnDisk:       DB.SizeOnDisk.Load().(string),
 			NumProcessedDocs: DB.NumProcessedDocs.Load(),
 		}
+		w.WriteHeader(http.StatusNotFound)
 		if err := notfound.Execute(w, p); err != nil {
 			log.Printf("error in template execution: %v", err)
 		}
