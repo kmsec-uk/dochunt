@@ -33,7 +33,7 @@ type DB struct {
 }
 
 // return the database size
-func (d *DB) dbSize() error {
+func (d *DB) DbSize() error {
 	f, err := os.Stat(d.path)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func NewDB(dbPath string) (*DB, error) {
 		return nil, err
 	}
 	DB.stmtStats = stmtStats
-	err = DB.dbSize()
+	err = DB.DbSize()
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (d *DB) ExplorePage(ts, ftsQuery string) (*PageData, error) {
 	for rows.Next() {
 		var row DocumentRow
 		if err := rows.Scan(&row.DocID, &row.Revision, &row.DocTitle, &row.Description, &row.Timestamp, &row.Source); err != nil {
-			log.Printf("Row scan error: %v", err)
+			log.Printf("error scanning row: %v", err)
 			continue
 		}
 		pageData.Rows = append(pageData.Rows, row)

@@ -1,17 +1,19 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
 
 func init() {
 	flag.Usage = func() {
-		fmt.Fprintln(flag.CommandLine.Output(), "Google Docs CommonCrawl scraper!")
+		fmt.Fprintln(flag.CommandLine.Output(), "Google Docs browser!")
 		flag.PrintDefaults()
 	}
 }
@@ -25,6 +27,22 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	t := time.NewTicker(time.Second)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				err := DB.DbSize()
+				if err != nil {
+					log.Printf("error checking database size: %v", err)
+				}
+			}
+		}
+	}()
 	mux := http.NewServeMux()
 	// favicon, css
 	mux.Handle("GET /static/", http.FileServerFS(content))
@@ -36,7 +54,7 @@ func main() {
 			NumProcessedDocs: DB.NumProcessedDocs.Load(),
 		}
 		if err := notfound.Execute(w, p); err != nil {
-			log.Printf("Template execution error: %v", err)
+			log.Printf("error in template execution: %v", err)
 		}
 	})
 	// index
@@ -48,7 +66,7 @@ func main() {
 		if wants == "json" {
 			err := DB.ExploreJSON(cursorTS, ftsQuery, w)
 			if err != nil {
-				log.Printf("error producing json results: %w", err)
+				log.Printf("error producing json results: %v", err)
 			}
 			return
 		}
@@ -60,7 +78,7 @@ func main() {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := index.Execute(w, p); err != nil {
-			log.Printf("Template execution error: %v", err)
+			log.Printf("error in template execution: %v", err)
 		}
 	})
 	// 404
@@ -71,7 +89,7 @@ func main() {
 			NumProcessedDocs: DB.NumProcessedDocs.Load(),
 		}
 		if err := notfound.Execute(w, p); err != nil {
-			log.Printf("Template execution error: %v", err)
+			log.Printf("error in template execution: %v", err)
 		}
 	})
 
