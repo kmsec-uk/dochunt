@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -26,6 +26,8 @@ type DB struct {
 	upsertDoc       *sql.Stmt
 	insertProcessed *sql.Stmt
 	existsProcessed *sql.Stmt
+	stmtGetState    *sql.Stmt
+	stmtSetState    *sql.Stmt
 }
 
 // query for inserting a document. sepearated out for readability
@@ -71,6 +73,14 @@ CREATE TRIGGER IF NOT EXISTS docs_fts_delete AFTER DELETE ON docs BEGIN
     DELETE FROM docs_fts WHERE id = old.id AND revision = old.revision;
 END;
 `
+var createUrlscanTable string = `
+CREATE TABLE IF NOT EXISTS urlscan_state (
+id INTEGER PRIMARY KEY CHECK (id = 1),
+ts TEXT NOT NULL);`
+
+var upsertUrlscanState string = `
+INSERT INTO urlscan_state (id, ts) VALUES (1, ?) 
+ON CONFLICT(id) DO UPDATE SET ts = excluded.ts;`
 
 func NewDB(dbPath string) (*DB, error) {
 	ensureDirExists(filepath.Dir(dbPath))
@@ -98,9 +108,29 @@ func NewDB(dbPath string) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("setting up db: %w", err)
 	}
-	_, err = db.Exec(ftsCreate + ftsBackfill + ftsInsertTrigger + ftsDeleteTrigger)
+	//fts
+	_, err = db.Exec(ftsCreate + ftsInsertTrigger + ftsDeleteTrigger)
 	if err != nil {
 		return nil, fmt.Errorf("setting up fts: %w", err)
+	}
+	// check if we need to backfill
+	var countFts int
+	err = db.QueryRow("SELECT COUNT(*) FROM docs_fts;").Scan(&countFts)
+	if err != nil {
+		return nil, fmt.Errorf("checking fts row count: %w", err)
+	}
+
+	if countFts == 0 {
+		_, err = db.Exec(ftsBackfill)
+		if err != nil {
+			return nil, fmt.Errorf("backfilling fts: %w", err)
+		}
+	}
+
+	// urlscan state
+	_, err = db.Exec(createUrlscanTable)
+	if err != nil {
+		return nil, fmt.Errorf("setting up db: creating urlscan table: %w", err)
 	}
 	db.SetMaxOpenConns(1)
 	DB := &DB{db: db}
@@ -123,10 +153,25 @@ func NewDB(dbPath string) (*DB, error) {
 	}
 	DB.upsertDoc = stmtUpsertDoc
 
+	stmtGetState, err := db.Prepare("SELECT ts FROM urlscan_state WHERE id = 1;")
+	if err != nil {
+		return nil, err
+	}
+	DB.stmtGetState = stmtGetState
+
+	// updateState
+	stmtSetState, err := db.Prepare(upsertUrlscanState)
+	if err != nil {
+		return nil, err
+	}
+	DB.stmtSetState = stmtSetState
 	return DB, nil
 }
 
-// IsProcessed checks if a digest has been processed
+// IsProcessed checks if a document has been ingested into
+// the DB. The parameter is called digest, which initially
+// referred to commoncrawl digest, but urlscan IDs are also
+// used as the unique marker.
 func (DB *DB) IsProcessed(digest string) (bool, error) {
 	var exists bool
 	err := DB.existsProcessed.QueryRow(digest).Scan(&exists)
@@ -134,6 +179,26 @@ func (DB *DB) IsProcessed(digest string) (bool, error) {
 		return false, err
 	}
 	return exists, nil
+}
+
+// LastUrlscanSearchTime retrieves the timestamp from the last search
+func (DB *DB) LastUrlscanSearchTime() (string, error) {
+	var timestamp string
+	err := DB.stmtGetState.QueryRow().Scan(&timestamp)
+	if err != nil {
+		return "", err
+	}
+	return timestamp, nil
+}
+
+// UpdateLastUrlscanSearchTime sets the timestamp t
+// as the contents of the `urlscan_state` table.
+func (DB *DB) UpdateLastUrlscanSearchTime(t string) error {
+	_, err := DB.stmtSetState.Exec(t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type Source struct {
@@ -202,4 +267,8 @@ func (DB *DB) AddDoc(doc *gdoc.Doc, srcName, digest string) error {
 	}
 
 	return tx.Commit()
+}
+
+func (DB *DB) Close() error {
+	return DB.db.Close()
 }

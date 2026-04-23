@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kmsec-uk/ccdocs/commoncrawl"
+	"github.com/kmsec-uk/ccdocs/db"
 	"github.com/kmsec-uk/ccdocs/gdoc"
 	"github.com/kmsec-uk/ccdocs/warc"
 	"golang.org/x/sync/errgroup"
@@ -54,10 +55,11 @@ func main() {
 	collection := flag.String("c", "CC-MAIN-2026-12", "commoncrawl collection to scrape")
 	flag.Parse()
 
-	db, err := NewDB(*dbPath)
+	db, err := db.NewDB(*dbPath)
 	if err != nil {
 		log.Fatalf("init db: %v", err)
 	}
+	defer db.Close()
 	log.Println("database setup complete, starting collection")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
