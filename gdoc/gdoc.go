@@ -38,6 +38,7 @@ var (
 	ErrDocIdNotExtracted             = errors.New("document ID could not be extracted")
 	ErrServerTimestampNotExtracted   = errors.New("server timestamp could not be extracted")
 	ErrCreationTimestampNotExtracted = errors.New("creation timestamp could not be extracted")
+	ErrDocParsing                    = errors.New("document parsing error")
 )
 
 type Doc struct {
@@ -90,7 +91,10 @@ func (d *Doc) WithTimestamp(s string) *Doc {
 // ParseHTML parses from an io.Reader to populate
 // the document struct
 func (d *Doc) ParseHtml(reader io.Reader) error {
-
+	// guards to check if we have found all the right script tags
+	var foundScriptsac bool
+	var foundScriptinitialdata bool
+	var foundScriptmodelchunk bool
 	doc, err := html.Parse(reader)
 	if err != nil {
 		return err
@@ -99,6 +103,7 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 	snippets := make([]string, 0)
 
 	for n := range doc.Descendants() {
+
 		// page.title attribute
 		if n.Type == html.ElementNode && n.DataAtom == atom.Title {
 			d.PageTitle = n.FirstChild.Data
@@ -153,6 +158,7 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 				continue
 			}
 			if strings.HasPrefix(n.FirstChild.Data, "DOCS_timing['sac']") {
+				foundScriptsac = true
 				// first get the doc creation time
 				m := docCreationTime.FindStringSubmatch(n.FirstChild.Data)
 				if len(m) != 2 {
@@ -169,6 +175,9 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 				if d.Id == "" {
 					docIdMatch := embeddedDocId.FindStringSubmatch(n.FirstChild.Data)
 					if len(docIdMatch) != 2 {
+						return ErrDocIdNotExtracted
+					}
+					if docIdMatch[1] == "" {
 						return ErrDocIdNotExtracted
 					}
 					d.Id = docIdMatch[1]
@@ -195,6 +204,7 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 			}
 			// timestamp only parsed if it's not populated
 			if strings.HasPrefix(n.FirstChild.Data, "_docs_flag_initialData") && d.Timestamp == "" {
+				foundScriptinitialdata = true
 				m := embeddedServerTimestamp.FindStringSubmatch(n.FirstChild.Data)
 				if len(m) != 2 {
 					return ErrServerTimestampNotExtracted
@@ -207,6 +217,7 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 				d.Timestamp = ts.UTC().Format(time.RFC3339)
 			}
 			if strings.HasPrefix(n.FirstChild.Data, "DOCS_modelChunk = {") {
+				foundScriptmodelchunk = true
 				// text blobs
 				embeddedTextMatches := embeddedText.FindAllStringSubmatch(n.FirstChild.Data, -1)
 				for _, m := range embeddedTextMatches {
@@ -257,6 +268,13 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 		}
 	}
 	d.Content = strings.Join(snippets, "\n")
+	if !foundScriptinitialdata && !foundScriptmodelchunk && !foundScriptsac {
+		return fmt.Errorf("%w: did not find all required html elements for parsing the doc: (initial data:%v,  modelchunk:%v, sac:%v)", ErrDocParsing, foundScriptinitialdata, foundScriptmodelchunk, foundScriptsac)
+
+	}
+	if d.Content == "" && len(d.Links) == 0 && len(d.ImageUrls) == 0 {
+		return fmt.Errorf("%w: no content, links, or embedded images found - is this document empty?", ErrDocParsing)
+	}
 	return nil
 }
 
