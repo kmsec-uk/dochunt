@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kmsec-uk/ccdocs/commoncrawl"
-	"github.com/kmsec-uk/ccdocs/db"
-	"github.com/kmsec-uk/ccdocs/gdoc"
-	"github.com/kmsec-uk/ccdocs/warc"
+	"github.com/kmsec-uk/dochunt/commoncrawl"
+	"github.com/kmsec-uk/dochunt/db"
+	"github.com/kmsec-uk/dochunt/gdoc"
+	"github.com/kmsec-uk/dochunt/warc"
 	"golang.org/x/sync/errgroup"
 )
 

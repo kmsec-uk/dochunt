@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kmsec-uk/ccdocs/gdoc"
+	"github.com/kmsec-uk/dochunt/gdoc"
 	_ "modernc.org/sqlite"
 )
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kmsec-uk/ccdocs/gdoc"
+	"github.com/kmsec-uk/dochunt/gdoc"
 )
 
 func TestUrlscanGetDom(t *testing.T) {

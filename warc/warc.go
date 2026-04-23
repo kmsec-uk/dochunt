@@ -8,7 +8,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/kmsec-uk/ccdocs/gdoc"
+	"github.com/kmsec-uk/dochunt/gdoc"
 )
 
 const capacity = 1024 * 1024

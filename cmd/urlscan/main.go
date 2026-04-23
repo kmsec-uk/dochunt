@@ -12,11 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kmsec-uk/ccdocs/db"
-	"github.com/kmsec-uk/ccdocs/gdoc"
+	"github.com/kmsec-uk/dochunt/db"
+	"github.com/kmsec-uk/dochunt/gdoc"
 )
 
 var ErrApiKeyEmpty = errors.New("api file is empty")
+
 var DocQuery string = `page.url:"https://docs.google.com/document/d/*" page.status:200`
 
 // ParsedPayload is used to pass data safely from the concurrent
@@ -77,8 +78,8 @@ func main() {
 			log.Fatalf("error getting last timestamp: %v", err)
 		}
 	}
-
 	currentTime := strconv.FormatInt(time.Now().Unix(), 10)
+
 	log.Printf("running query for results since %s", since)
 
 	searchResults, err := u.Search(ctx, DocQuery, since)

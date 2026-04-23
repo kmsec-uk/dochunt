@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kmsec-uk/ccdocs/gdoc"
+	"github.com/kmsec-uk/dochunt/gdoc"
 )
 
 func TestParseGzippedWarcItem(t *testing.T) {
