@@ -78,7 +78,7 @@ func main() {
 			log.Fatalf("error getting last timestamp: %v", err)
 		}
 	}
-	currentTime := strconv.FormatInt(time.Now().Unix(), 10)
+	currentTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
 	log.Printf("running query for results since %s", since)
 

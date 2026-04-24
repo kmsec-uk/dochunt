@@ -180,7 +180,7 @@ type Result struct {
 // This function automatically pages through results.
 func (u *UrlscanClient) Search(ctx context.Context, query, since string) (chan Result, error) {
 	if since != "" {
-		query = fmt.Sprintf("date>%s AND (%s)", since, query)
+		query = fmt.Sprintf("date:>%s AND (%s)", since, query)
 	}
 
 	ch := make(chan Result, 100)
