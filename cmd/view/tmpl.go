@@ -50,13 +50,14 @@ var AboutFAQs = []FAQ{
 			<li>Snippets of the documents content</li>
 			<li>Links that are embedded in the document</li>
 			<li>Image urls that are embedded in the document (although these are always hosted on Google's servers and unique for <i>every</i> image.)</li>
-		</ul>`,
+		</ul>
+		<p>You can <a target="_blank" href="https://kmsec.uk/blog/parsing-google-docs/">read my blog post</a> on this effort.</p>`,
 	},
 	{
 		Heading: "How do you collect this data?",
 		Content: `
-		<p>This dataset leverages <a href="https://commoncrawl.org/" target="_blank">commoncrawl</a>
-		and <a href="https://urlscan.io/">urlscan</a> as the primary sources of public Google Docs.</p>
+		<p>This dataset leverages <a target="_blank" href="https://commoncrawl.org/" target="_blank">commoncrawl</a>
+		and <a target="_blank" href="https://urlscan.io/">urlscan</a> as the primary sources of public Google Docs.</p>
 		<p>Both commoncrawl and urlscan archive a page's HTML on their servers.
 		HTML is parsed from these third parties to extract a document's metadata and content.</p>
 		<p><b>No data is scraped directly from Google servers, and all data held here is already publicly 
@@ -65,13 +66,28 @@ var AboutFAQs = []FAQ{
 	{
 		Heading: "How does this work under the hood?",
 		Content: `<p>Raw Google Docs pages' HTML are retrieved from commoncrawl and urlscan, parsed, and then ingested into a SQLITE database.
-		It's all written in Go. Check out the <a href="https://github.com/kmsec-uk/dochunt">source code</a>.</p>
+		It's all written in Go. Check out the <a target="_blank" href="https://github.com/kmsec-uk/dochunt">source code</a>.</p>
 		<p>At the moment, all collection requires a manual trigger.</p>
 		<p>The web server and database is hosted on a computer in my home in the UK, so availability and performance is not guaranteed.</p>`,
 	},
 	{
+		Heading: "Do you have an API?",
+		Content: `
+		<p>A basic one yes. Both the query page and document view can return JSON.</p>
+		<p>The query page is newline-delimited JSON (NDJSON).</p>
+		<p>Simply add a <code>format=json</code> parameter to your requests. For example 
+		<br>
+		<a href="/?q=%E7%A2%BA%E8%AA%8D%E3%81%99%E3%82%8B&format=json"><code>https://dochunt.kmsec.uk/?q=%E7%A2%BA%E8%AA%8D%E3%81%99%E3%82%8B&format=json</code></a></p>
+		The query page is newline-delimited JSON (NDJSON).</p>
+		<p>Adding <code>?format=json</code> to a document endpoint returns a 
+		single JSON object that discloses all instances of this document in the 
+		corpus. For example:
+		<br>
+		<a href="/d/1_G0BCG2pd-6JvmGVeflBM5xVovAPzHniwKygSAttG48?format=json"><code>https://dochunt.kmsec.uk/d/1_G0BCG2pd-6JvmGVeflBM5xVovAPzHniwKygSAttG48?format=json</code></a></p>`,
+	},
+	{
 		Heading: "Is the data accurate?",
-		Content: `<p>Part of my motivation here was to test whether the parser works against a large corpus of raw HTML documents. It works 98% of the time.</p>
+		Content: `<p>Part of my motivation here was to test whether the parser works against a large corpus of raw HTML documents. It works 98% of the time (that number is based on vibes. Completely made up).</p>
 		<p>However, when parsing document content, there is no 
 		guarantee that it is complete or in the correct order.</p>
 		<p>This is due to my preference for "good enough" rather than perfect parsing (see also: <i>"skill issue"</i>).</p>
@@ -88,10 +104,9 @@ var AboutFAQs = []FAQ{
 	{
 		Heading: "Why did you do this?",
 		Content: `<p>I'm not a developer, but as a threat intelligence analyst, I love turning raw data into actionable content.</p>
-		<p>On parental leave I had the unique combination of very sporadic focus time, extra mental capacity, and a mind free to pursue something completely
+		<p>On parental leave I had the unique combination of limited, sporadic focus time, extra mental capacity, and a mind free to pursue something completely
 		meritless. This was something I could pick up and work on when I needed a bit of cognitive stimulation.</p>
-		<p>I had also only recently discovered commoncrawl (which truly is a modern treasure trove), and I wanted to get familiar with its inner
-		workings.</p>`,
+		<p>I had also only recently discovered commoncrawl (which truly is a modern treasure trove), and I wanted to get familiar with it.</p>`,
 	},
 	{
 		Heading: "Is this vibe coded?",
@@ -102,7 +117,7 @@ var AboutFAQs = []FAQ{
 		Heading: "Do you accept takedowns?",
 		Content: `<p>Yes. This is a hobby project of mine, however I am able to conduct manual takedowns in as timely manner as I can.</p>
 		<p>Be mindful that <b>this data is merely a refinement of what can be found on third party websites</b> (namely commoncrawl, urlscan, or Google Docs if the document is still publicly accessible).</p>
-		<p>Check out the contact details on the footer of <a href="https://kmsec.uk">my website</a> or <a href="https://github.com/kmsec-uk/dochunt/issues/new?title=Takedown%20request&body=Please%20remove%20document%20[document%20ID%20here]%20as%20it%20contains%20[xyz]">create an issue on GitHub</a>.</p>
+		<p>Check out the contact details on the footer of <a target="_blank" href="https://kmsec.uk">my website</a> or <a target="_blank" href="https://github.com/kmsec-uk/dochunt/issues/new?title=Takedown%20request&body=Please%20remove%20document%20[document%20ID%20here]%20as%20it%20contains%20[xyz]">create an issue on GitHub</a>.</p>
 		<p>Please provide the document ID and come prepared with the justification for takedown -- for example the presence of sensitive personally identifiable information (PII), illegal, offensive, or harmful content.</p>`,
 	},
 }
