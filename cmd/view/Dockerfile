@@ -1,8 +1,12 @@
 FROM golang:1.26.1-alpine AS builder
 
 WORKDIR /app
-COPY ../../go.* ./
-COPY ./*.go ./
+COPY ./go.prod.mod ./go.mod
+COPY ./go.sum .
+COPY *.go .
+COPY static static
+COPY tmpl tmpl
+RUN go mod download
 RUN go build -v -o /app/srv ./*.go
 
 FROM alpine:3.23
