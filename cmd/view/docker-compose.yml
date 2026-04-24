@@ -13,6 +13,8 @@ services:
     environment:
       TUNNEL_TOKEN_FILE: /run/secrets/cloudflared_token
     restart: always
+    secrets:
+      - cloudflared_token
 secrets:
   cloudflared_token:
-    file: ./.tunneltoken
+    file: .tunnel_token
