@@ -86,21 +86,16 @@
         const turnOnTxt = "🌞"
         const turnOffTxt = "🌚"
         // initial
-        let mediaQueryIsDark = false
-
         const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-        mediaQueryIsDark = darkModeMediaQuery.matches
-
-        darkModeMediaQuery.addEventListener('change', (e) => {
-            mediaQueryIsDark = e.matches;
-        });
+        if (darkModeMediaQuery.matches && localStorage.getItem('theme') === null ) {
+            localStorage.setItem("theme", "dark")
+        }
 
         if (localStorage.getItem('theme') === "dark") {
             document.documentElement.dataset.theme = "dark"
-        }
-        if (mediaQueryIsDark) {
-            document.documentElement.dataset.theme = "dark"
+        } else {
+            document.documentElement.dataset.theme = "light"
         }
 
         const isDark = () => document.documentElement.dataset.theme === "dark"
@@ -119,5 +114,4 @@
         })
     </script>
 </body>
-
 </html>
