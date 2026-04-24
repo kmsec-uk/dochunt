@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -47,6 +48,15 @@ func main() {
 		}
 	}()
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		// don't allow access to index document contents
+		w.Header().Set("Content-Type", "text/plain")
+		io.WriteString(w, `User-agent: *
+Allow: /$
+Allow: /about
+Allow: /static/
+Disallow: /d/`)
+	})
 	// favicon, css
 	mux.Handle("GET /static/", http.FileServerFS(content))
 	mux.HandleFunc("GET /static/{$}", func(w http.ResponseWriter, r *http.Request) {

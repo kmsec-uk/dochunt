@@ -12,13 +12,14 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// ensure a directory exists.
-func ensureDirExists(dir string) {
+// ensure a directory exists
+// for hosting the database file.
+func ensureDirExists(dir string) error {
 	err := os.MkdirAll(dir, 0750)
 	if err != nil {
-		panic(err)
+		return err
 	}
-
+	return nil
 }
 
 type DB struct {
@@ -83,7 +84,10 @@ INSERT INTO urlscan_state (id, ts) VALUES (1, ?)
 ON CONFLICT(id) DO UPDATE SET ts = excluded.ts;`
 
 func NewDB(dbPath string) (*DB, error) {
-	ensureDirExists(filepath.Dir(dbPath))
+	err := ensureDirExists(filepath.Dir(dbPath))
+	if err != nil {
+		return nil, fmt.Errorf("creating db directory: %w", err)
+	}
 	db, err := sql.Open("sqlite", "file:"+dbPath+dsn)
 	if err != nil {
 		return nil, err

@@ -57,24 +57,25 @@ Provide some example queries that demonstrate fts5 query syntax, like `title:bit
 Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</code></pre>
     </details>
 </section>
-{{range .Rows}}
-<article>
-    <header>
+<section class="results">
+    {{range .Rows}}
+    <article>
+        <header>
 
-        <hgroup>
-            <h4>{{.DocTitle}}</h4>
-            <a href="/d/{{.DocID}}">View document</a>
-        </hgroup>
-    </header>
-    <p class="content">{{.Description}}</p>
-    <footer>
-        <small class="detail"><span class="src">{{.Source}}</span> observed this document on
-            <time>{{.Timestamp}}</time></small>
-        <small>Doc ID: <code>{{.DocID}}</code> | Revision: <code>{{.Revision}}</code></small>
-    </footer>
-</article>
-{{end}}
-
+            <hgroup>
+                <h4>{{.DocTitle}}</h4>
+                <a href="/d/{{.DocID}}">View document</a>
+            </hgroup>
+        </header>
+        <p class="content">{{.Description}}</p>
+        <footer>
+            <small class="detail"><span class="src">{{.Source}}</span> observed this document on
+                <time>{{.Timestamp}}</time></small>
+            <small>Doc ID: <code>{{.DocID}}</code> | Revision: <code>{{.Revision}}</code></small>
+        </footer>
+    </article>
+    {{end}}
+</section>
 <br>
 {{if .NextTS}}
 <a href="/?q={{.SearchQuery}}&ts={{.NextTS}}">Next 100 Items &gt;</a>
@@ -82,28 +83,32 @@ Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</
 <p>End of results.</p>
 {{end}}
 <style>
-    section#search {
+    #search {
         margin-block: 4rem;
     }
 
-    article>header {
+    #results article>header {
         display: block;
         height: fit-content;
         overflow: auto;
     }
 
-    hgroup>h4 {
+    #results hgroup>h4 {
         white-space: nowrap;
     }
 
-    span.src {
+    #results span.src {
         color: var(--pico-secondary);
     }
 
-    p.content {
+    #results p.content {
         font-size: 0.8rem;
         max-height: 6rem;
         overflow: auto;
+    }
+
+    #results footer>small {
+        display: block;
     }
 
     div#promptcontainer {
@@ -128,8 +133,9 @@ Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</
         border-radius: 0;
         border-top-right-radius: 0.5rem;
     }
+
     button#copyprompt::before {
-        content:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBjbGFzcz0iZG9jdW1lbnQtdGV4dC1vdXRsaW5lIj48ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xhc3M9IlZlY3RvciIgY2xpcC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTUuMTQzIDIySDguMjg2QTQuMjg2IDQuMjg2IDAgMCAxIDQgMTcuNzE0VjYuMjg2QTQuMjg2IDQuMjg2IDAgMCAxIDguMjg2IDJoNC4wMDhhMy41IDMuNSAwIDAgMSAyLjMwNC44NjZsMy42MzUgMy4xOGEzLjUgMy41IDAgMCAxIDEuMTk2IDIuNjM1djkuMDMzQTQuMjg2IDQuMjg2IDAgMCAxIDE1LjE0MyAyMm0wLTJIOC4yODZBMi4yODYgMi4yODYgMCAwIDEgNiAxNy43MTRWNi4yODZBMi4yODYgMi4yODYgMCAwIDEgOC4yODYgNGg0LjAwOGExLjUgMS41IDAgMCAxIC45ODcuMzcxbDMuNjM1IDMuMThhMS41IDEuNSAwIDAgMSAuNTEzIDEuMTN2OS4wMzNBMi4yODYgMi4yODYgMCAwIDEgMTUuMTQzIDIwIi8+PHBhdGggZD0iTTcgMTJhMSAxIDAgMCAxIDEtMWg1YTEgMSAwIDEgMSAwIDJIOGExIDEgMCAwIDEtMS0xbTAgNGExIDEgMCAwIDEgMS0xaDMuMTI1YTEgMSAwIDEgMSAwIDJIOGExIDEgMCAwIDEtMS0xbTYtMTNhMSAxIDAgMCAxIDEgMXYzYTEgMSAwIDAgMCAxIDFoMi41YTEgMSAwIDEgMSAwIDJIMTVhMyAzIDAgMCAxLTMtM1Y0YTEgMSAwIDAgMSAxLTEiLz48L2c+PC9nPjwvc3ZnPg==");
+        content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBjbGFzcz0iZG9jdW1lbnQtdGV4dC1vdXRsaW5lIj48ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xhc3M9IlZlY3RvciIgY2xpcC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTUuMTQzIDIySDguMjg2QTQuMjg2IDQuMjg2IDAgMCAxIDQgMTcuNzE0VjYuMjg2QTQuMjg2IDQuMjg2IDAgMCAxIDguMjg2IDJoNC4wMDhhMy41IDMuNSAwIDAgMSAyLjMwNC44NjZsMy42MzUgMy4xOGEzLjUgMy41IDAgMCAxIDEuMTk2IDIuNjM1djkuMDMzQTQuMjg2IDQuMjg2IDAgMCAxIDE1LjE0MyAyMm0wLTJIOC4yODZBMi4yODYgMi4yODYgMCAwIDEgNiAxNy43MTRWNi4yODZBMi4yODYgMi4yODYgMCAwIDEgOC4yODYgNGg0LjAwOGExLjUgMS41IDAgMCAxIC45ODcuMzcxbDMuNjM1IDMuMThhMS41IDEuNSAwIDAgMSAuNTEzIDEuMTN2OS4wMzNBMi4yODYgMi4yODYgMCAwIDEgMTUuMTQzIDIwIi8+PHBhdGggZD0iTTcgMTJhMSAxIDAgMCAxIDEtMWg1YTEgMSAwIDEgMSAwIDJIOGExIDEgMCAwIDEtMS0xbTAgNGExIDEgMCAwIDEgMS0xaDMuMTI1YTEgMSAwIDEgMSAwIDJIOGExIDEgMCAwIDEtMS0xbTYtMTNhMSAxIDAgMCAxIDEgMXYzYTEgMSAwIDAgMCAxIDFoMi41YTEgMSAwIDEgMSAwIDJIMTVhMyAzIDAgMCAxLTMtM1Y0YTEgMSAwIDAgMSAxLTEiLz48L2c+PC9nPjwvc3ZnPg==");
     }
 
     #prompt {

@@ -5,6 +5,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="author" content="kmsec-uk">
+    <meta name="description" content="dochunt.kmsec.uk: public parsed Google Docs dataset">
+    <meta name="keywords" content="Google Docs, research, threat intelligence">
     <link rel="icon" href="/static/favicon.svg" />
     <link rel="stylesheet" href="/static/pico.min.css" />
     <title>{{ .Title}} | dochunt</title>
@@ -16,7 +19,6 @@
         display: flex;
         justify-content: space-between;
     }
-
 
     #stats {
         display: flex;
@@ -41,12 +43,13 @@
         white-space: nowrap;
     }
 
-    footer>small {
-        display: block;
-    }
-
     .dochunt::before {
-  content:     url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMzNEE4NTMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGQ9Ik0xNSAyLjVWNGMwIDEuNDE0IDAgMi4xMjEuNDQgMi41NkMxNS44NzggNyAxNi41ODUgNyAxOCA3aDEuNSIvPjxwYXRoIGQ9Ik00IDE2VjhjMC0yLjgyOCAwLTQuMjQzLjg3OS01LjEyMUM1Ljc1NyAyIDcuMTcyIDIgMTAgMmg0LjE3MmMuNDA4IDAgLjYxMyAwIC43OTcuMDc2Yy4xODMuMDc2LjMyOC4yMi42MTcuNTFsMy44MjggMy44MjhjLjI5LjI5LjQzNC40MzQuNTEuNjE4Yy4wNzYuMTgzLjA3Ni4zODguMDc2Ljc5NlYxNmMwIDIuODI4IDAgNC4yNDMtLjg3OSA1LjEyMUMxOC4yNDMgMjIgMTYuODI4IDIyIDE0IDIyaC00Yy0yLjgyOCAwLTQuMjQzIDAtNS4xMjEtLjg3OUM0IDIwLjI0MyA0IDE4LjgyOCA0IDE2bTQtNWg4bS04IDNoOG0tOCAzaDQuMTciLz48L2c+PC9zdmc+");
+        content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMzNEE4NTMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGQ9Ik0xNSAyLjVWNGMwIDEuNDE0IDAgMi4xMjEuNDQgMi41NkMxNS44NzggNyAxNi41ODUgNyAxOCA3aDEuNSIvPjxwYXRoIGQ9Ik00IDE2VjhjMC0yLjgyOCAwLTQuMjQzLjg3OS01LjEyMUM1Ljc1NyAyIDcuMTcyIDIgMTAgMmg0LjE3MmMuNDA4IDAgLjYxMyAwIC43OTcuMDc2Yy4xODMuMDc2LjMyOC4yMi42MTcuNTFsMy44MjggMy44MjhjLjI5LjI5LjQzNC40MzQuNTEuNjE4Yy4wNzYuMTgzLjA3Ni4zODguMDc2Ljc5NlYxNmMwIDIuODI4IDAgNC4yNDMtLjg3OSA1LjEyMUMxOC4yNDMgMjIgMTYuODI4IDIyIDE0IDIyaC00Yy0yLjgyOCAwLTQuMjQzIDAtNS4xMjEtLjg3OUM0IDIwLjI0MyA0IDE4LjgyOCA0IDE2bTQtNWg4bS04IDNoOG0tOCAzaDQuMTciLz48L2c+PC9zdmc+");
+    }
+    body>footer>sub{
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-evenly;
     }
 </style>
 
@@ -70,6 +73,14 @@
         <h1>{{ .Title }}</h1>
 
         {{template "main" .}}
+    </main>
+    <footer class="container">
+        <sub>
+            <p>From <a target="_blank" href="https://kmsec.uk">kmsec-uk</a>.</p>
+            <p>Styled with <a target="_blank" href="https://picocss.com/">PicoCSS</a>.</p>
+            <p>Source available on <a target="_blank" href="https://github.com/kmsec-uk/dochunt">GitHub</a>.</p>
+        </sub>
+    </footer>
 </body>
 
 </html>

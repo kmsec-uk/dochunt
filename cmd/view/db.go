@@ -18,12 +18,12 @@ import (
 )
 
 // ensure a directory exists.
-func ensureDirExists(dir string) {
+func ensureDirExists(dir string) error {
 	err := os.MkdirAll(dir, 0750)
 	if err != nil {
-		panic(err)
+		return err
 	}
-
+	return nil
 }
 
 type DB struct {
@@ -51,7 +51,10 @@ func (d *DB) DbSize() error {
 	return nil
 }
 func NewDB(dbPath string) (*DB, error) {
-	ensureDirExists(filepath.Dir(dbPath))
+	err := ensureDirExists(filepath.Dir(dbPath))
+	if err != nil {
+		return nil, fmt.Errorf("creating db directory: %w", err)
+	}
 	// the view server opens it in read-only mode.
 	db, err := sql.Open("sqlite", "file:"+dbPath+"?mode=ro")
 	if err != nil {
@@ -80,7 +83,7 @@ func NewDB(dbPath string) (*DB, error) {
 	return DB, nil
 }
 
-// DocumentRow represents a single row in the view
+// DocumentRow represents a single row in the search view
 type DocumentRow struct {
 	Timestamp   string `json:"timestamp"`
 	Source      string `json:"source"`
@@ -90,12 +93,6 @@ type DocumentRow struct {
 	Revision    string `json:"revision"`
 }
 
-// PageData holds the data for the base HTML template
-type PageData struct {
-	Title            string
-	SizeOnDisk       string
-	NumProcessedDocs uint32
-}
 type IndexPage struct {
 	PageData
 	SearchQuery string
