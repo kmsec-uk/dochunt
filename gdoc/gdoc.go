@@ -216,7 +216,7 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 				}
 				d.Timestamp = ts.UTC().Format(time.RFC3339)
 			}
-			if strings.HasPrefix(n.FirstChild.Data, "DOCS_modelChunk = {") {
+			if strings.HasPrefix(n.FirstChild.Data, "DOCS_modelChunk =") {
 				foundScriptmodelchunk = true
 				// text blobs
 				embeddedTextMatches := embeddedText.FindAllStringSubmatch(n.FirstChild.Data, -1)
@@ -272,8 +272,11 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 		return fmt.Errorf("%w: did not find all required html elements for parsing the doc: (initial data:%v,  modelchunk:%v, sac:%v)", ErrDocParsing, foundScriptinitialdata, foundScriptmodelchunk, foundScriptsac)
 
 	}
-	if d.Content == "" && len(d.Links) == 0 && len(d.ImageUrls) == 0 {
-		return fmt.Errorf("%w: no content, links, or embedded images found - is this document empty?", ErrDocParsing)
+	if d.Content == "" && len(d.Links) == 0 && len(d.ImageUrls) == 0 && d.OgTitle == "" {
+		return fmt.Errorf("%w: one of title, content, links, or images should be present - is this document empty?", ErrDocParsing)
+	}
+	if d.Created.IsZero() {
+		return fmt.Errorf("%w: doc creation timestamp (dct) was not identified", ErrDocParsing)
 	}
 	return nil
 }

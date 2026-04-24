@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 )
 
 func TestGDocParse(t *testing.T) {
@@ -14,6 +15,9 @@ func TestGDocParse(t *testing.T) {
 	}
 	for _, e := range entries {
 		if e.Name() == ".gitignore" {
+			continue
+		}
+		if e.Name() == "README.md" {
 			continue
 		}
 		f, err := os.Open(path.Join("test_files", e.Name()))
@@ -30,6 +34,7 @@ func TestGDocParse(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		// fmt.Println(g)
 		if g.Id == "" {
 			t.Errorf("%s: doc id should be present", g.Provenance)
 		}
@@ -42,9 +47,12 @@ func TestGDocParse(t *testing.T) {
 		if len(g.PageTitle) == 0 {
 			t.Fatalf("%s: should have some page title", g.Provenance)
 		}
-		if g.Revision == 0 {
-			t.Fatalf("%s: should have a non-zero Revision", g.Provenance)
+		if g.Created.Before(time.Time{}.Add(1 * time.Second)) {
+			t.Fatalf("%s: should have a non-default creation timestamp", g.Provenance)
 
 		}
+		// if g.Revision == 0 {
+		// 	t.Fatalf("%s: should have a non-zero Revision", g.Provenance)
+		// }
 	}
 }
