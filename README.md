@@ -12,7 +12,7 @@ Everything else here supports the dataset viewable at [dochunt](https://dochunt.
 
 * `/db/` - the database writer implementation that underpins the sqlite database
 * `/commoncrawl/` - a basic search+retrieve commoncrawl client used in `/cmd/get/`
-* `/urlscan/` - a basic search+retrieve urlscan client used in `/cmd/urlscan/`
+* `/warc/` - a very specific WARC file parser specifically for my use-case (specific!)
 
 `/cmd/view` contains the web server, templates, etc. for [dochunt](https://dochunt.kmsec.uk)
 and a distinct database reader implementation.
