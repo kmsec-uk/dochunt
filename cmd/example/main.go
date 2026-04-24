@@ -1,27 +1,13 @@
-# Google Docs hunting dataset
+package main
 
-This repository holds the code that supports [dochunt](https://dochunt.kmsec.uk).
+import (
+	"encoding/json"
+	"fmt"
+	"os"
 
-Before reading the code, you may want to [read the blog post](https://kmsec.uk/blog/parsing-google-docs) that introduces the problem 
-statement and my approach.
+	"github.com/kmsec-uk/dochunt/gdoc"
+)
 
-The star of the show is the code to parse Google Docs content from HTML. It is very simple and
-is hosted in `/gdoc/`.
-
-Everything else here supports the dataset viewable at [dochunt](https://dochunt.kmsec.uk).
-
-* `/db/` - the database writer implementation that underpins the sqlite database
-* `/commoncrawl/` - a basic search+retrieve commoncrawl client used in `/cmd/get/`
-* `/urlscan/` - a basic search+retrieve urlscan client used in `/cmd/urlscan/`
-
-`/cmd/view` contains the web server, templates, etc. for [dochunt](https://dochunt.kmsec.uk)
-and a distinct database reader implementation.
-
-## Example program
-
-If you want to parse Google Docs content from HTML, here's a minimal approach:
-
-```go
 func main() {
 	// open a file for reading
 	f, err := os.Open("example.html")
@@ -66,7 +52,8 @@ func main() {
 			]
 			}
 	*/
+	fmt.Println(
+		"[!] Congratulations! You have just parsed a malicious Google Doc",
+		"that supports the DPRK's Contagious Interview campaign!",
+	)
 }
-```
-The example above is is shown in `/cmd/example/main.go`. 
-FYI, the document in the example above has been taken down, which is why it's useful to be able to parse HTML from archived snapshots. Neat!
