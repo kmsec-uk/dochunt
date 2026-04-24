@@ -31,6 +31,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer DB.db.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	t := time.NewTicker(time.Second)

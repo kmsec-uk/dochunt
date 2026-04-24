@@ -11,47 +11,49 @@
     <link rel="icon" href="/static/favicon.svg" />
     <link rel="stylesheet" href="/static/pico.min.css" />
     <title>{{ .Title}} | dochunt</title>
+    <style>
+        body>header {
+            height: 3rem;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #stats {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 0.5rem;
+            font-size: small;
+        }
+
+        #stats>* {
+            padding-inline: 0.2rem;
+            padding-block: 0.2rem;
+            white-space: nowrap;
+        }
+
+        #theme {
+            display: block;
+            height: 1.5rem;
+            padding-inline: 0.3rem;
+            padding-block: 0.1rem;
+            text-align: center;
+            font-size: smaller;
+            white-space: nowrap;
+        }
+
+        .dochunt::before {
+            content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMzNEE4NTMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGQ9Ik0xNSAyLjVWNGMwIDEuNDE0IDAgMi4xMjEuNDQgMi41NkMxNS44NzggNyAxNi41ODUgNyAxOCA3aDEuNSIvPjxwYXRoIGQ9Ik00IDE2VjhjMC0yLjgyOCAwLTQuMjQzLjg3OS01LjEyMUM1Ljc1NyAyIDcuMTcyIDIgMTAgMmg0LjE3MmMuNDA4IDAgLjYxMyAwIC43OTcuMDc2Yy4xODMuMDc2LjMyOC4yMi42MTcuNTFsMy44MjggMy44MjhjLjI5LjI5LjQzNC40MzQuNTEuNjE4Yy4wNzYuMTgzLjA3Ni4zODguMDc2Ljc5NlYxNmMwIDIuODI4IDAgNC4yNDMtLjg3OSA1LjEyMUMxOC4yNDMgMjIgMTYuODI4IDIyIDE0IDIyaC00Yy0yLjgyOCAwLTQuMjQzIDAtNS4xMjEtLjg3OUM0IDIwLjI0MyA0IDE4LjgyOCA0IDE2bTQtNWg4bS04IDNoOG0tOCAzaDQuMTciLz48L2c+PC9zdmc+");
+        }
+
+        body>footer>sub {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: space-evenly;
+        }
+    </style>
+
 </head>
-<style>
-    body>header {
-        height: 3rem;
-        position: relative;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    #stats {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 0.5rem;
-        font-size: small;
-    }
-
-    #stats>* {
-        padding-inline: 0.2rem;
-        padding-block: 0.2rem;
-        white-space: nowrap;
-    }
-
-    #theme {
-        display: block;
-        height: 1.5rem;
-        padding-inline: 0.3rem;
-        padding-block: 0.1rem;
-        text-align: center;
-        font-size: smaller;
-        white-space: nowrap;
-    }
-
-    .dochunt::before {
-        content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMzNEE4NTMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGQ9Ik0xNSAyLjVWNGMwIDEuNDE0IDAgMi4xMjEuNDQgMi41NkMxNS44NzggNyAxNi41ODUgNyAxOCA3aDEuNSIvPjxwYXRoIGQ9Ik00IDE2VjhjMC0yLjgyOCAwLTQuMjQzLjg3OS01LjEyMUM1Ljc1NyAyIDcuMTcyIDIgMTAgMmg0LjE3MmMuNDA4IDAgLjYxMyAwIC43OTcuMDc2Yy4xODMuMDc2LjMyOC4yMi42MTcuNTFsMy44MjggMy44MjhjLjI5LjI5LjQzNC40MzQuNTEuNjE4Yy4wNzYuMTgzLjA3Ni4zODguMDc2Ljc5NlYxNmMwIDIuODI4IDAgNC4yNDMtLjg3OSA1LjEyMUMxOC4yNDMgMjIgMTYuODI4IDIyIDE0IDIyaC00Yy0yLjgyOCAwLTQuMjQzIDAtNS4xMjEtLjg3OUM0IDIwLjI0MyA0IDE4LjgyOCA0IDE2bTQtNWg4bS04IDNoOG0tOCAzaDQuMTciLz48L2c+PC9zdmc+");
-    }
-    body>footer>sub{
-        display: flex;
-        flex-wrap: nowrap;
-        justify-content: space-evenly;
-    }
-</style>
 
 <body>
     <header class="container">
@@ -81,38 +83,41 @@
             <p>Source available on <a target="_blank" href="https://github.com/kmsec-uk/dochunt">GitHub</a>.</p>
         </sub>
     </footer>
+    <script>
+        const turnOnTxt = "Light mode"
+        const turnOffTxt = "Dark mode"
+        // initial
+        let mediaQueryIsDark = false
+
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+        mediaQueryIsDark = darkModeMediaQuery.matches
+
+        darkModeMediaQuery.addEventListener('change', (e) => {
+            mediaQueryIsDark = e.matches;
+        });
+
+        if (localStorage.getItem('theme') === "dark") {
+            document.documentElement.dataset.theme = "dark"
+        }
+        if (mediaQueryIsDark) {
+            document.documentElement.dataset.theme = "dark"
+        }
+
+        const isDark = () => document.documentElement.dataset.theme === "dark"
+
+        // changer
+        const themeButton = document.querySelector("#theme")
+
+        themeButton.textContent = isDark() ? turnOnTxt : turnOffTxt
+
+        themeButton.addEventListener("click", () => {
+            var wasDark = isDark()
+            document.documentElement.dataset.theme = wasDark ? "light" : "dark"
+            themeButton.textContent = wasDark ? turnOffTxt : turnOnTxt
+            localStorage.setItem("theme", wasDark ? "light" : "dark")
+        })
+    </script>
 </body>
 
 </html>
-<script>
-    const turnOnTxt = "Light mode"
-    const turnOffTxt = "Dark mode"
-    // initial
-    let mediaQueryIsDark = false
-
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    mediaQueryIsDark = darkModeMediaQuery.matches
-
-    darkModeMediaQuery.addEventListener('change', (e) => {
-        mediaQueryIsDark = e.matches;
-    });
-
-    const isDark = () => document.documentElement.dataset.theme === "dark" || mediaQueryIsDark || localStorage.getItem('theme') === "dark"
-
-    // set in case media query / localstorage is dark
-    if (isDark()) {
-        document.documentElement.dataset.theme = "dark"
-    }
-    // changer
-    const themeButton = document.querySelector("#theme")
-
-    themeButton.textContent = isDark() ? turnOnTxt : turnOffTxt
-
-    themeButton.addEventListener("click", () => {
-        var wasDark = isDark()
-        document.documentElement.dataset.theme = wasDark ? "light" : "dark"
-        themeButton.textContent = wasDark ? turnOffTxt : turnOnTxt
-        localStorage.setItem("theme", wasDark ? "light" : "dark")
-    })
-</script>

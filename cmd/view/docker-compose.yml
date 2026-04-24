@@ -1,5 +1,5 @@
 services:
-  gdoc_srv:
+  dochunt_srv:
     build: .
     container_name: web
     volumes:
