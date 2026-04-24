@@ -10,6 +10,8 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/cloudflared_token
     restart: always
 secrets:
   cloudflared_token:
