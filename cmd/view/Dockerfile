@@ -13,4 +13,4 @@ FROM alpine:3.23
 COPY --from=builder /app/srv /app/srv
 RUN addgroup -g 101 -S web && adduser -h /app -u 1001 -D web -G web
 USER web
-CMD ["/app/srv", "--db", "/app/store.db"]
+CMD ["/app/srv", "--db", "/app/data/store.db"]

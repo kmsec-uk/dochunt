@@ -47,7 +47,7 @@ var AboutFAQs = []FAQ{
 			<li>Title</li>
 			<li>Creation date</li>
 			<li>Number of revisions</li>
-			<li>Snippets of the documents content</li>
+			<li>Snippets of the document's content</li>
 			<li>Links that are embedded in the document</li>
 			<li>Image urls that are embedded in the document (although these are always hosted on Google's servers and unique for <i>every</i> image.)</li>
 		</ul>
