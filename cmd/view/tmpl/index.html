@@ -64,12 +64,18 @@ Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</
 
             <hgroup>
                 <h4>{{.DocTitle}}</h4>
-                <a href="/d/{{.DocID}}">View document</a>
+                <a href="/d/{{.DocID}}" title="View full details of document {{.DocID}} ({{.DocTitle}})">
+                    <p class="subtitle">
+                        <span>View document</span>
+                        <span>{{.DocID}}</span>
+
+                    </p>
+                </a>
             </hgroup>
         </header>
         <p class="content">{{.Description}}</p>
         <footer>
-            <small class="detail"><span class="src">{{.Source}}</span> observed this document on
+            <small class="detail"><span class="{{.Source}}">{{.Source}}</span> observed this document on
                 <time>{{.Timestamp}}</time></small>
             <small>Doc ID: <code>{{.DocID}}</code> | Revision: <code>{{.Revision}}</code></small>
         </footer>
@@ -78,7 +84,7 @@ Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</
 </section>
 <br>
 {{if .NextTS}}
-<a href="/?q={{.SearchQuery}}&ts={{.NextTS}}">Next 100 Items &gt;</a>
+<a href="/?q={{.SearchQuery}}&ts={{.NextTS}}" title="Page through to the next 100 results">Next 100 results &gt;</a>
 {{else}}
 <p>End of results.</p>
 {{end}}
@@ -97,8 +103,21 @@ Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</
         white-space: nowrap;
     }
 
-    .results span.src {
-        color: var(--pico-secondary);
+    .results .subtitle {
+        display: flex;
+        row-gap: 0.5rem;
+        column-gap: 1rem;
+        flex-wrap: wrap;
+        justify-content:baseline;
+    }
+
+    .results .subtitle>* {
+        padding: 2px;
+        margin: 2px;
+        text-align: center;
+        vertical-align: center;
+        font-size: medium;
+        text-decoration: none;
     }
 
     .results p.content {

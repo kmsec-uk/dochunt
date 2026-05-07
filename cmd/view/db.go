@@ -212,6 +212,7 @@ func (d *DB) ExplorePage(ts, ftsQuery string) (*IndexPage, error) {
 
 	for rows.Next() {
 		var row DocumentRow
+		// 	SELECT d.id, d.revision, d.og_title AS doc_title, d.og_description AS description, json_extract(j.value, '$.ts') AS timestamp, json_extract(j.value, '$.src') AS source
 		if err := rows.Scan(&row.DocID, &row.Revision, &row.DocTitle, &row.Description, &row.Timestamp, &row.Source); err != nil {
 			log.Printf("error scanning row: %v", err)
 			continue
@@ -229,7 +230,8 @@ func (d *DB) ExplorePage(ts, ftsQuery string) (*IndexPage, error) {
 	return &pageData, nil
 }
 
-// The query view's (index page) JSON interface
+// The query view's (index page) JSON interface.
+// This writes line-delimited JSON straight to the http.Writer
 func (d *DB) ExploreJSON(ts, ftsQuery string, w http.ResponseWriter) error {
 	rows, err := d.doExploreQuery(ts, ftsQuery)
 	if err != nil {
@@ -258,7 +260,8 @@ func (d *DB) ExploreJSON(ts, ftsQuery string, w http.ResponseWriter) error {
 }
 
 // helper function to create and perform the sql query
-// as there are an exponential number of different ways
+// as there are an exponential number of variations (4)
+// based on the parameters.
 func (d *DB) doExploreQuery(ts, ftsQuery string) (*sql.Rows, error) {
 
 	baseSelect := `

@@ -31,9 +31,10 @@
             padding-block: 0.2rem;
             white-space: nowrap;
         }
+
         #theme {
-            display:block;
-            width:fit-content;
+            display: block;
+            width: fit-content;
             height: 1.5rem;
             padding-inline: 0.3rem;
             padding-block: 0.1rem;
@@ -43,6 +44,14 @@
 
         .dochunt::before {
             content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMzNEE4NTMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGQ9Ik0xNSAyLjVWNGMwIDEuNDE0IDAgMi4xMjEuNDQgMi41NkMxNS44NzggNyAxNi41ODUgNyAxOCA3aDEuNSIvPjxwYXRoIGQ9Ik00IDE2VjhjMC0yLjgyOCAwLTQuMjQzLjg3OS01LjEyMUM1Ljc1NyAyIDcuMTcyIDIgMTAgMmg0LjE3MmMuNDA4IDAgLjYxMyAwIC43OTcuMDc2Yy4xODMuMDc2LjMyOC4yMi42MTcuNTFsMy44MjggMy44MjhjLjI5LjI5LjQzNC40MzQuNTEuNjE4Yy4wNzYuMTgzLjA3Ni4zODguMDc2Ljc5NlYxNmMwIDIuODI4IDAgNC4yNDMtLjg3OSA1LjEyMUMxOC4yNDMgMjIgMTYuODI4IDIyIDE0IDIyaC00Yy0yLjgyOCAwLTQuMjQzIDAtNS4xMjEtLjg3OUM0IDIwLjI0MyA0IDE4LjgyOCA0IDE2bTQtNWg4bS04IDNoOG0tOCAzaDQuMTciLz48L2c+PC9zdmc+");
+        }
+
+        .urlscan {
+            color: rgb(24, 188, 156);
+        }
+
+        .commoncrawl {
+            color: rgb(50, 135, 197);
         }
 
         body>footer>sub {
@@ -77,7 +86,7 @@
     </main>
     <footer class="container">
         <sub>
-            <p>From <a target="_blank" href="https://kmsec.uk">kmsec-uk</a>.</p>
+            <p>From <a target="_blank" href="https://kmsec.uk">kmsec.uk</a>.</p>
             <p>Styled with <a target="_blank" href="https://picocss.com/">PicoCSS</a>.</p>
             <p>Source available on <a target="_blank" href="https://github.com/kmsec-uk/dochunt">GitHub</a>.</p>
         </sub>
@@ -88,7 +97,7 @@
         // initial
         const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-        if (darkModeMediaQuery.matches && localStorage.getItem('theme') === null ) {
+        if (darkModeMediaQuery.matches && localStorage.getItem('theme') === null) {
             localStorage.setItem("theme", "dark")
         }
 
@@ -114,4 +123,5 @@
         })
     </script>
 </body>
+
 </html>

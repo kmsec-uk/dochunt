@@ -22,7 +22,7 @@ var (
 	// default page size for search results.
 	defaultPageSize             = 100
 	ErrRateLimitExhausted error = errors.New("client backed off to the maximum rate limit (>30s) but is still getting unexpected status code")
-	maxRetries                  = 5
+	maxRetries                  = 3
 )
 
 // HTTPError is a custom error that holds the HTTP status code
@@ -112,6 +112,7 @@ func NewUrlscanClient(apikey string) *UrlscanClient {
 		delay:     defaultRateLimit,
 		baseDelay: defaultRateLimit,
 		pageSize:  defaultPageSize,
+		apikey:    apikey,
 	}
 }
 

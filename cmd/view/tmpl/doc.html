@@ -66,7 +66,7 @@
         <h6>Observers</h6>
         <ul>
             {{range .Sources}}
-            <li>{{.Src}} ({{.Id}}) <code>{{.Timestamp.Format "2006-01-02 15:04:05"}}</code></li>
+            <li><span class="{{.Src}}">{{.Src}}</span> ({{.Id}}) <code>{{.Timestamp.Format "2006-01-02 15:04:05"}}</code></li>
             {{end}}
         </ul>
 

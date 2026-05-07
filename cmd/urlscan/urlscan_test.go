@@ -47,6 +47,26 @@ func TestUrlscanGetDom2(t *testing.T) {
 	}
 }
 
+func TestUrlscanGetDom3(t *testing.T) {
+	u := NewUrlscanClient("")
+	res, err := u.GetDom(t.Context(), "019e02c6-ab7f-77bf-9e4c-80e65ea841ff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Close()
+	d := gdoc.Doc{}
+	err = d.ParseHtml(res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Content == "" {
+		t.Fatal("empty content")
+	}
+	if len(d.Links) == 0 {
+		t.Fatal("empty links")
+	}
+}
+
 // this one should fail GDOC parsing
 func TestUrlscanGetDomShouldFail(t *testing.T) {
 	u := NewUrlscanClient("").WithRateLimit(2 * time.Second)
