@@ -1,0 +1,12 @@
+services:
+  dochunt_urlscan:
+    build: .
+    container_name: dochunt-urlscan
+    volumes:
+      - ../data:/app/data:rw
+    restart: always
+    secrets:
+      - urlscan_token
+secrets:
+  urlscan_token:
+    file: .apikey

@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/kmsec-uk/dochunt/db"
@@ -50,7 +52,8 @@ func readApiKey(filepath string) (string, error) {
 }
 
 func main() {
-
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	dbPath := flag.String("db", "../data/store.db", "path to database")
 	apifile := flag.String("apifile", "./.apikey", "path to urlscan api file")
 
@@ -58,24 +61,48 @@ func main() {
 
 	apikey, err := readApiKey(*apifile)
 	if err != nil {
-		log.Fatalf("reading apifile `%s`: %v", *apifile, err)
+		log.Fatalf("error reading apifile `%s`: %v", *apifile, err)
 	}
 	u := NewUrlscanClient(apikey)
 
 	db, err := db.NewDB(*dbPath)
+
 	if err != nil {
-		log.Fatalf("init db: %v", err)
+		log.Fatalf("error init db: %v", err)
 	}
 	defer db.Close()
 	log.Println("database setup complete, starting collection")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+
+	if err := update(ctx, u, db); err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("exiting!")
+			return
+		case t := <-ticker.C:
+			log.Printf("starting collection at %s", t.Format(time.RFC3339))
+			if err := update(ctx, u, db); err != nil {
+				log.Println(err)
+			}
+			log.Println("finished processing")
+		}
+	}
+
+}
+
+func update(ctx context.Context, u *UrlscanClient, db *db.DB) error {
 	since, err := db.LastUrlscanSearchTime()
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			since = ""
 		} else {
-			log.Fatalf("error getting last timestamp: %v", err)
+			return fmt.Errorf("error getting last timestamp: %v", err)
+
 		}
 	}
 	currentTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
@@ -85,7 +112,8 @@ func main() {
 	searchResults, err := u.Search(ctx, DocQuery, since)
 
 	if err != nil {
-		log.Fatalf("error running search: %v", err)
+		return fmt.Errorf("error running search: %v", err)
+
 	}
 
 	writerDone := make(chan struct{})
@@ -99,7 +127,6 @@ func main() {
 			}
 			log.Printf("%s ingested into db", p.Doc.Id)
 		}
-		log.Println("closing db writer channel")
 		close(writerDone)
 	}()
 
@@ -146,24 +173,23 @@ func main() {
 			log.Printf("error: doc %s: fetching DOM for %s: %v\n", doc.Id, res.Item.Id, err)
 			continue
 		}
-		defer reader.Close()
+
 		if err := doc.ParseHtml(reader); err != nil {
 			log.Printf("error: doc %s: parsing urlscan ID `%s` html stream: %v\n", doc.Id, res.Item.Id, err)
+			reader.Close()
 			continue
 		}
 		resultsCh <- ParsedPayload{doc, res.Item.Id}
-
+		reader.Close()
 	}
-	log.Println("closing results channel")
 	close(resultsCh)
 	<-writerDone
 
 	// update state
 	err = db.UpdateLastUrlscanSearchTime(currentTime)
 	if err != nil {
-		log.Printf("Could not update state with timestamp %s: %v", currentTime, err)
+		log.Printf("error: could not update state with timestamp %s: %v", currentTime, err)
 
 	}
-
-	log.Println("finished processing")
+	return nil
 }
