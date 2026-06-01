@@ -66,7 +66,22 @@
         <h6>Observers</h6>
         <ul>
             {{range .Sources}}
-            <li><span class="{{.Src}}">{{.Src}}</span> ({{.Id}}) <code>{{.Timestamp.Format "2006-01-02 15:04:05"}}</code></li>
+            <li>
+                <span class="{{.Src}}">{{.Src}}</span> 
+                <code>{{.Timestamp.Format "2006-01-02 15:04:05"}}</code>
+                <br/>
+                <small>
+                {{ if eq .Src "urlscan" }}
+                <a target="_blank" href="https://urlscan.io/result/{{.Id}}">
+                    Go to urlscan result ({{.Id -}}) 
+                </a>
+                {{ else if eq .Src "commoncrawl" }}
+                <a target="_blank" href="https://index.commoncrawl.org/{{.Id}}-index?url=https://docs.google.com/document/d/{{$.Id}}*&filter==status:200">
+                    Search on commoncrawl index ({{.Id -}})
+                </a>
+                </small>
+                {{end}}
+            </li>
             {{end}}
         </ul>
 
