@@ -290,7 +290,7 @@ func (d *DB) doExploreQuery(ts, ftsQuery string) (*sql.Rows, error) {
 			JOIN docs d ON f.id = d.id AND f.revision = d.revision
 			JOIN json_each(d.sources) j
 			WHERE docs_fts MATCH ?
-			ORDER BY rank, timestamp DESC
+			ORDER BY timestamp DESC
 			LIMIT 100
 		`
 		return d.db.Query(query, ftsQuery)
@@ -305,7 +305,7 @@ func (d *DB) doExploreQuery(ts, ftsQuery string) (*sql.Rows, error) {
 			JOIN docs d ON f.id = d.id AND f.revision = d.revision
 			JOIN json_each(d.sources) j
 			WHERE docs_fts MATCH ? AND json_extract(j.value, '$.ts') < ?
-			ORDER BY rank, timestamp DESC
+			ORDER BY timestamp DESC
 			LIMIT 100
 		`
 		return d.db.Query(query, ftsQuery, ts)
