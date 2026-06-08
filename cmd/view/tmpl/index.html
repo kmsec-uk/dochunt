@@ -1,10 +1,17 @@
 {{define "main"}}
 <p>Explore my collection of parsed Google Docs</p>
 <section id="search">
-    <form role="search" method="GET">
+    <form id="searchform" role="search" method="GET">
         <input type="search" name="q" placeholder="Search" value="{{.SearchQuery}}">
         <button type="submit">search</button>
     </form>
+    <label>Filter by source
+        <select form="searchform" name="s">
+            <option value="" {{if eq .SelectedSource ""}}selected{{end}}>any</option>
+            <option value="commoncrawl" {{if eq .SelectedSource "commoncrawl"}}selected{{end}}>commoncrawl</option>
+            <option value="urlscan" {{if eq .SelectedSource "urlscan"}}selected{{end}}>urlscan</option>
+        </select>
+    </label>
     <details>
         <summary>
             ☝ Search help and examples
@@ -106,7 +113,7 @@ Be brief and prefer tabular style output to demonstrate powerful fts5 queries.</
         row-gap: 0.5rem;
         column-gap: 1rem;
         flex-wrap: wrap;
-        justify-content:baseline;
+        justify-content: baseline;
     }
 
     .results p.content {

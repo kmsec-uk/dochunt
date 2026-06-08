@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -65,7 +66,7 @@ func NewDB(dbPath string) (*DB, error) {
 		path: dbPath,
 	}
 
-	stmtStats, err := db.Prepare(`SELECT COUNT(*) FROM processed`)
+	stmtStats, err := db.Prepare(`SELECT COUNT(distinct id) FROM docs`)
 	if err != nil {
 		return nil, err
 	}
@@ -95,9 +96,10 @@ type DocumentRow struct {
 
 type IndexPage struct {
 	PageData
-	SearchQuery string
-	Rows        []DocumentRow
-	NextTS      string
+	SearchQuery    string
+	SelectedSource string
+	Rows           []DocumentRow
+	NextTS         string
 }
 type JsonArrayString []string
 
@@ -194,11 +196,11 @@ func (d *DB) DocPage(id string) (*DocPageData, error) {
 
 // ExplorePage creates the PageData for the index page (the query
 // view)
-func (d *DB) ExplorePage(ts, ftsQuery string) (*IndexPage, error) {
+func (d *DB) ExplorePage(ts, ftsQuery, src string) (*IndexPage, error) {
 
-	rows, err := d.doExploreQuery(ts, ftsQuery)
+	rows, err := d.buildDoExploreQuery(ts, ftsQuery, src)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("doing query: %w", err)
 	}
 
 	defer rows.Close()
@@ -208,6 +210,7 @@ func (d *DB) ExplorePage(ts, ftsQuery string) (*IndexPage, error) {
 	pageData.NumProcessedDocs = d.NumProcessedDocs.Load()
 	pageData.SizeOnDisk = d.SizeOnDisk.Load().(string)
 	pageData.SearchQuery = ftsQuery
+	pageData.SelectedSource = src
 	var lastTS string
 
 	for rows.Next() {
@@ -232,14 +235,14 @@ func (d *DB) ExplorePage(ts, ftsQuery string) (*IndexPage, error) {
 
 // The query view's (index page) JSON interface.
 // This writes line-delimited JSON straight to the http.Writer
-func (d *DB) ExploreJSON(ts, ftsQuery string, w http.ResponseWriter) error {
-	rows, err := d.doExploreQuery(ts, ftsQuery)
+func (d *DB) ExploreJSON(ts, ftsQuery, src string, w http.ResponseWriter) error {
+	rows, err := d.buildDoExploreQuery(ts, ftsQuery, src)
 	if err != nil {
-		return err
+		return fmt.Errorf("doing query: %w", err)
 	}
 
 	defer rows.Close()
-
+	cnt := 0
 	for rows.Next() {
 		var row DocumentRow
 		if err := rows.Scan(&row.DocID, &row.Revision, &row.DocTitle, &row.Description, &row.Timestamp, &row.Source); err != nil {
@@ -255,16 +258,39 @@ func (d *DB) ExploreJSON(ts, ftsQuery string, w http.ResponseWriter) error {
 		if _, err := w.Write([]byte("\r\n")); err != nil {
 			return err
 		}
+		cnt += 1
+	}
+	if cnt == 0 {
+		http.Error(w, "no data", http.StatusOK)
 	}
 	return nil
 }
 
+// query builder
 // helper function to create and perform the sql query
-// as there are an exponential number of variations (4)
+// as there are an exponential number of variations
 // based on the parameters.
-func (d *DB) doExploreQuery(ts, ftsQuery string) (*sql.Rows, error) {
+func (d *DB) buildDoExploreQuery(ts, ftsQuery, src string) (*sql.Rows, error) {
+	var query strings.Builder
+	var args []any
+	var conditions []string
 
-	baseSelect := `
+	if ftsQuery != "" {
+		_, err := query.WriteString(`
+			SELECT 
+				d.id, d.revision, d.og_title AS doc_title, d.og_description AS description,
+				json_extract(j.value, '$.ts') AS timestamp, json_extract(j.value, '$.src') AS source
+			FROM docs_fts f
+			JOIN docs d ON f.id = d.id AND f.revision = d.revision
+			JOIN json_each(d.sources) j
+		`)
+		if err != nil {
+			return nil, fmt.Errorf("building query: %w", err)
+		}
+		conditions = append(conditions, "docs_fts MATCH ?")
+		args = append(args, ftsQuery)
+	} else {
+		_, err := query.WriteString(`
 		SELECT 
 			d.id,
 			d.revision,
@@ -274,47 +300,35 @@ func (d *DB) doExploreQuery(ts, ftsQuery string) (*sql.Rows, error) {
 			json_extract(j.value, '$.src') AS source
 		FROM docs d
 		JOIN json_each(d.sources) j
-	`
+		`)
+		if err != nil {
+			return nil, fmt.Errorf("building query: %w", err)
 
-	if ts == "" && ftsQuery == "" {
-		query := baseSelect + ` ORDER BY timestamp DESC LIMIT 100`
-		return d.db.Query(query)
+		}
 	}
-
-	if ts == "" && ftsQuery != "" {
-		query := `
-			SELECT 
-				d.id, d.revision, d.og_title AS doc_title, d.og_description AS description,
-				json_extract(j.value, '$.ts') AS timestamp, json_extract(j.value, '$.src') AS source
-			FROM docs_fts f
-			JOIN docs d ON f.id = d.id AND f.revision = d.revision
-			JOIN json_each(d.sources) j
-			WHERE docs_fts MATCH ?
-			ORDER BY timestamp DESC
-			LIMIT 100
-		`
-		return d.db.Query(query, ftsQuery)
+	if ts != "" {
+		args = append(args, ts)
+		conditions = append(conditions, "timestamp < ?")
 	}
-
-	if ts != "" && ftsQuery != "" {
-		query := `
-			SELECT 
-				d.id, d.revision, d.og_title AS doc_title, d.og_description AS description,
-				json_extract(j.value, '$.ts') AS timestamp, json_extract(j.value, '$.src') AS source
-			FROM docs_fts f
-			JOIN docs d ON f.id = d.id AND f.revision = d.revision
-			JOIN json_each(d.sources) j
-			WHERE docs_fts MATCH ? AND json_extract(j.value, '$.ts') < ?
-			ORDER BY timestamp DESC
-			LIMIT 100
-		`
-		return d.db.Query(query, ftsQuery, ts)
+	if src != "" {
+		args = append(args, src)
+		conditions = append(conditions, "source = ?")
 	}
+	if len(conditions) > 0 {
+		_, err := query.WriteString("\nWHERE ")
+		if err != nil {
+			return nil, fmt.Errorf("building query: %w", err)
 
-	if ts != "" && ftsQuery == "" {
-		query := baseSelect + ` WHERE timestamp < ? ORDER BY timestamp DESC LIMIT 100`
-		return d.db.Query(query, ts)
+		}
+		_, err = query.WriteString(strings.Join(conditions, " AND "))
+		if err != nil {
+			return nil, fmt.Errorf("building query: %w", err)
+		}
 	}
+	_, err := query.WriteString("\nORDER BY timestamp DESC limit 100")
+	if err != nil {
+		return nil, fmt.Errorf("building query: %w", err)
 
-	return nil, errors.New("unreachable code reached")
+	}
+	return d.db.Query(query.String(), args...)
 }

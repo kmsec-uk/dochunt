@@ -10,7 +10,7 @@
             <td>Created</td>
             <td>{{(index .Instances 0).Created}}</td>
         </tr>
-                <tr>
+        <tr>
             <td>Last seen</td>
             <td>{{.LastSeen}}</td>
         </tr>
@@ -19,7 +19,20 @@
             <td>{{len .Instances}}</td>
         </tr>
     </table>
-    <a href="https://docs.google.com/document/d/{{.Id}}" target="_blank"><p>Open in Google Docs <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g class="open-in-new-tab-outline"><g fill="currentColor" fill-rule="evenodd" class="Vector" clip-rule="evenodd"><path d="M5 4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5.263a1 1 0 1 1 2 0V19a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3h5.017a1 1 0 1 1 0 2z"/><path d="M21.411 2.572a.963.963 0 0 1 0 1.36l-8.772 8.786a.96.96 0 0 1-1.358 0a.963.963 0 0 1 0-1.36l8.773-8.786a.96.96 0 0 1 1.357 0"/><path d="M21.04 2c.53 0 .96.43.96.962V8c0 .531-.47 1-1 1s-1-.469-1-1V4h-4c-.53 0-1-.469-1-1s.43-1 .96-1z"/></g></g></svg></p></a>
+    <a href="https://docs.google.com/document/d/{{.Id}}" target="_blank">
+        <p>Open in Google Docs <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <g class="open-in-new-tab-outline">
+                    <g fill="currentColor" fill-rule="evenodd" class="Vector" clip-rule="evenodd">
+                        <path
+                            d="M5 4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5.263a1 1 0 1 1 2 0V19a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3h5.017a1 1 0 1 1 0 2z" />
+                        <path
+                            d="M21.411 2.572a.963.963 0 0 1 0 1.36l-8.772 8.786a.96.96 0 0 1-1.358 0a.963.963 0 0 1 0-1.36l8.773-8.786a.96.96 0 0 1 1.357 0" />
+                        <path
+                            d="M21.04 2c.53 0 .96.43.96.962V8c0 .531-.47 1-1 1s-1-.469-1-1V4h-4c-.53 0-1-.469-1-1s.43-1 .96-1z" />
+                    </g>
+                </g>
+            </svg></p>
+    </a>
     <h4>Skip to revision</h4>
     {{range .Instances}}
     <ul>
@@ -35,7 +48,8 @@
         <p>Throughout the lifetime of a document, it may undergo several revisions by editors.
             A larger revision number means more edits to a document.</p>
         <p>Observers may see different revisions of the same document when visiting it over
-            time, so we can use the revision as a chronological marker, which helps inform us of the document's lifecycle.</p>
+            time, so we can use the revision as a chronological marker, which helps inform us of the document's
+            lifecycle.</p>
 
         <small>Note: imported documents (i.e. .docx) typically come with a standard revision of <b>1</b>.</small>
     </details>
@@ -67,19 +81,20 @@
         <ul>
             {{range .Sources}}
             <li>
-                <span class="{{.Src}}">{{.Src}}</span> 
+                <span class="{{.Src}}">{{.Src}}</span>
                 <code>{{.Timestamp.Format "2006-01-02 15:04:05"}}</code>
-                <br/>
+                <br />
                 <small>
-                {{ if eq .Src "urlscan" }}
-                <a target="_blank" href="https://urlscan.io/result/{{.Id}}">
-                    Go to urlscan result ({{.Id -}}) 
-                </a>
-                {{ else if eq .Src "commoncrawl" }}
-                <a target="_blank" href="https://index.commoncrawl.org/{{.Id}}-index?url=https://docs.google.com/document/d/{{$.Id}}*&filter==status:200">
-                    Find on commoncrawl index ({{.Id -}})
-                </a>
-                {{end}}
+                    {{ if eq .Src "urlscan" }}
+                    <a target="_blank" href="https://urlscan.io/result/{{.Id}}">
+                        Go to urlscan result ({{.Id -}})
+                    </a>
+                    {{ else if eq .Src "commoncrawl" }}
+                    <a target="_blank"
+                        href="https://index.commoncrawl.org/{{.Id}}-index?url=https://docs.google.com/document/d/{{$.Id}}*&filter==status:200">
+                        Find on commoncrawl index ({{.Id -}})
+                    </a>
+                    {{end}}
                 </small>
             </li>
             {{end}}

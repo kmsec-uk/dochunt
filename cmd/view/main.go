@@ -76,16 +76,19 @@ Disallow: /d/`)
 
 		cursorTS := r.URL.Query().Get("ts")
 		ftsQuery := r.URL.Query().Get("q")
+		src := r.URL.Query().Get("s")
+
 		wants := r.URL.Query().Get("format")
 		if wants == "json" {
 			w.Header().Set("Content-Type", "application/json")
-			err := DB.ExploreJSON(cursorTS, ftsQuery, w)
+			err := DB.ExploreJSON(cursorTS, ftsQuery, src, w)
 			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Printf("error producing json results: %v", err)
 			}
 			return
 		}
-		p, err := DB.ExplorePage(cursorTS, ftsQuery)
+		p, err := DB.ExplorePage(cursorTS, ftsQuery, src)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
