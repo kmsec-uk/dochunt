@@ -59,26 +59,29 @@ var AboutFAQs = []FAQ{
 		<p>This dataset leverages <a target="_blank" href="https://commoncrawl.org/" target="_blank">commoncrawl</a>
 		and <a target="_blank" href="https://urlscan.io/">urlscan</a> as the primary sources of public Google Docs.</p>
 		<p>Both commoncrawl and urlscan archive a page's HTML on their servers.
-		HTML is parsed from these third parties to extract a document's metadata and content.</p>
-		<p><b>No data is scraped directly from Google servers, and all data held here is already publicly 
-		available on the internet in an unparsed format.</b></p>`,
+		HTML is parsed from these third parties to extract a document's metadata and content. For the majority of the docs here, 
+		<b>no data is scraped directly from Google servers.</p>
+		<p>As a threat intelligence researcher, I have also ingested a limited set of my own document scans. These
+		documents are almost certainly malicious in some way. You can see this corpus <a href="/?q=&s=kmsec.uk">
+		by filtering for source <em>kmsec.uk</em></a>.</p>
+		`,
 	},
 	{
 		Heading: "How does this work under the hood?",
 		Content: `<p>Raw Google Docs pages' HTML are retrieved from commoncrawl and urlscan, parsed, and then ingested into a SQLITE database.
 		It's all written in Go. Check out the <a target="_blank" href="https://github.com/kmsec-uk/dochunt">source code</a>.</p>
-		<p>At the moment, all collection requires a manual trigger.</p>
+		<p>At the moment, commoncrawl ingestion requires a manual trigger.</p>
 		<p>The web server and database is hosted on a computer in my home in the UK, so availability and performance is not guaranteed.</p>`,
 	},
 	{
 		Heading: "Do you have an API?",
 		Content: `
 		<p>A basic one yes. Both the query page and document view can return JSON.</p>
-		<p>The query page is newline-delimited JSON (NDJSON).</p>
-		<p>Simply add a <code>format=json</code> parameter to your requests. For example 
+		<p>The query page is newline-delimited JSON (NDJSON, aka LDJSON).</p>
+		<p>Simply add a <code>format=json</code> parameter to your requests
+		to return your results in JSON format. For example 
 		<br>
 		<a href="/?q=%E7%A2%BA%E8%AA%8D%E3%81%99%E3%82%8B&format=json"><code>https://dochunt.kmsec.uk/?q=%E7%A2%BA%E8%AA%8D%E3%81%99%E3%82%8B&format=json</code></a></p>
-		The query page is newline-delimited JSON (NDJSON).</p>
 		<p>Adding <code>?format=json</code> to a document endpoint returns a 
 		single JSON object that discloses all instances of this document in the 
 		corpus. For example:
