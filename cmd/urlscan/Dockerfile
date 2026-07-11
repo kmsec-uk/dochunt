@@ -4,7 +4,7 @@ WORKDIR /app
 COPY ./go.prod.mod ./go.mod
 COPY ./go.sum .
 COPY *.go .
-RUN go get github.com/kmsec-uk/dochunt@main
+RUN go get github.com/kmsec-uk/dochunt@latest
 RUN go mod download
 RUN GOEXPERIMENT=jsonv2 go build -v -o /app/urlscangetdocs ./*.go
 
