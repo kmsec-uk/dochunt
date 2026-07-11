@@ -91,10 +91,7 @@ func (d *Doc) WithTimestamp(s string) *Doc {
 // ParseHTML parses from an io.Reader to populate
 // the document struct
 func (d *Doc) ParseHtml(reader io.Reader) error {
-	// guards to check if we have found all the right script tags
-	var foundScriptsac bool
-	var foundScriptinitialdata bool
-	var foundScriptmodelchunk bool
+
 	doc, err := html.Parse(reader)
 	if err != nil {
 		return err
@@ -157,126 +154,120 @@ func (d *Doc) ParseHtml(reader io.Reader) error {
 			if n.FirstChild == nil || n.FirstChild.Type != html.TextNode {
 				continue
 			}
-			if strings.HasPrefix(n.FirstChild.Data, "DOCS_timing['sac']") {
-				foundScriptsac = true
-				// first get the doc creation time
+
+			if d.Created.IsZero() {
 				m := docCreationTime.FindStringSubmatch(n.FirstChild.Data)
-				if len(m) != 2 {
-					return ErrCreationTimestampNotExtracted
-				}
-				t, err := stringToDate(m[1])
-				if err != nil {
-					return fmt.Errorf("parsing creation time from `%s`: %w", m[1], err)
-				} else {
-					d.Created = t
-				}
-				// embedded doc ID
-				// only parse if initialised with empty Id
-				if d.Id == "" {
-					docIdMatch := embeddedDocId.FindStringSubmatch(n.FirstChild.Data)
-					if len(docIdMatch) != 2 {
-						return ErrDocIdNotExtracted
+				if len(m) == 2 {
+
+					t, err := stringToDate(m[1])
+					if err != nil {
+						return fmt.Errorf("parsing creation time from `%s`: %w", m[1], err)
+					} else {
+						d.Created = t
 					}
+				}
+			}
+
+			// embedded doc ID
+			// only parse if initialised with empty Id
+			if d.Id == "" {
+				docIdMatch := embeddedDocId.FindStringSubmatch(n.FirstChild.Data)
+				if len(docIdMatch) == 2 {
+
 					if docIdMatch[1] == "" {
 						return ErrDocIdNotExtracted
 					}
 					d.Id = docIdMatch[1]
 				}
-				// image blob urls
-				imageBlobMatches := imageBlobUrls.FindAllStringSubmatch(n.FirstChild.Data, -1)
-				if len(imageBlobMatches) == 0 {
-					continue
-				}
-				for _, m := range imageBlobMatches {
-					if len(m[1]) == 0 {
-						continue
-					}
-					var t string
-					err := json.Unmarshal([]byte(m[1]), &t)
-					if err != nil {
-						log.Printf("%s: error: json unmarshall `%s...`: %v", d.Id, m[1][:30], err)
-						continue
-					}
-					t = strings.TrimSpace(t)
-					d.ImageUrls = append(d.ImageUrls, t)
-				}
-
 			}
+
 			// timestamp only parsed if it's not populated
-			if strings.HasPrefix(n.FirstChild.Data, "_docs_flag_initialData") && d.Timestamp == "" {
-				foundScriptinitialdata = true
+			if d.Timestamp == "" {
 				m := embeddedServerTimestamp.FindStringSubmatch(n.FirstChild.Data)
-				if len(m) != 2 {
-					return ErrServerTimestampNotExtracted
-				}
-				ts, err := stringToDate(m[1])
-				if err != nil {
-					return fmt.Errorf("parsing creation time from `%s`: %w", m[1], err)
+				if len(m) == 2 {
+					ts, err := stringToDate(m[1])
+					if err != nil {
+						return fmt.Errorf("parsing server timestamp time from `%s`: %w", m[1], err)
 
+					}
+					d.Timestamp = ts.UTC().Format(time.RFC3339)
 				}
-				d.Timestamp = ts.UTC().Format(time.RFC3339)
 			}
-			if strings.HasPrefix(n.FirstChild.Data, "DOCS_modelChunk =") {
-				foundScriptmodelchunk = true
-				// text blobs
-				embeddedTextMatches := embeddedText.FindAllStringSubmatch(n.FirstChild.Data, -1)
-				for _, m := range embeddedTextMatches {
-					var t string
-					err := json.Unmarshal([]byte(m[1]), &t)
-					if err != nil {
-						log.Printf("%s: error: json unmarshall `%s...`: %v", d.Id, m[1][:30], err)
-						continue
-					}
-					t = strings.TrimSpace(t)
-					if len(t) == 0 {
-						continue
-					}
-					snippets = append(snippets, t)
-				}
-				// links
-				embeddedLinkMatches := embeddedLinks.FindAllStringSubmatch(n.FirstChild.Data, -1)
-				for _, m := range embeddedLinkMatches {
-					var t string
-					err := json.Unmarshal([]byte(m[1]), &t)
-					if err != nil {
-						log.Printf("%s: error: json unmarshall `%s...`: %v", d.Id, m[1][:30], err)
-						continue
-					}
-					t = strings.TrimSpace(t)
-					if len(t) == 0 {
-						continue
-					}
-					if slices.Contains(d.Links, t) {
-						continue
-					}
-					d.Links = append(d.Links, t)
-				}
-				// revision
-				m := embeddedRevision.FindStringSubmatch(n.FirstChild.Data)
-				if len(m) != 2 {
+
+			// image blob urls
+			imageBlobMatches := imageBlobUrls.FindAllStringSubmatch(n.FirstChild.Data, -1)
+			for _, m := range imageBlobMatches {
+				if len(m[1]) == 0 {
 					continue
 				}
-				u64, err := strconv.ParseUint(m[1], 10, 32)
+				var t string
+				err := json.Unmarshal([]byte(m[1]), &t)
 				if err != nil {
-					continue // keep passing
+					log.Printf("%s: error: json unmarshall `%s...`: %v", d.Id, m[1][:30], err)
+					continue
 				}
-				if u32 := uint32(u64); d.Revision < u32 {
-					d.Revision = u32
+				t = strings.TrimSpace(t)
+				d.ImageUrls = append(d.ImageUrls, t)
+			}
+
+			// text blobs
+			embeddedTextMatches := embeddedText.FindAllStringSubmatch(n.FirstChild.Data, -1)
+			for _, m := range embeddedTextMatches {
+				var t string
+				err := json.Unmarshal([]byte(m[1]), &t)
+				if err != nil {
+					log.Printf("%s: error: json unmarshall `%s...`: %v", d.Id, m[1][:30], err)
+					continue
 				}
+				t = strings.TrimSpace(t)
+				if len(t) == 0 {
+					continue
+				}
+				snippets = append(snippets, t)
+			}
+			// links
+			embeddedLinkMatches := embeddedLinks.FindAllStringSubmatch(n.FirstChild.Data, -1)
+			for _, m := range embeddedLinkMatches {
+				var t string
+				err := json.Unmarshal([]byte(m[1]), &t)
+				if err != nil {
+					log.Printf("%s: error: json unmarshall `%s...`: %v", d.Id, m[1][:30], err)
+					continue
+				}
+				t = strings.TrimSpace(t)
+				if len(t) == 0 {
+					continue
+				}
+				if slices.Contains(d.Links, t) {
+					continue
+				}
+				d.Links = append(d.Links, t)
+			}
+			// revision
+			m := embeddedRevision.FindStringSubmatch(n.FirstChild.Data)
+			if len(m) != 2 {
+				continue
+			}
+			u64, err := strconv.ParseUint(m[1], 10, 32)
+			if err != nil {
+				continue // keep passing
+			}
+			if u32 := uint32(u64); d.Revision < u32 {
+				d.Revision = u32
 			}
 
 		}
 	}
 	d.Content = strings.Join(snippets, "\n")
-	if !foundScriptinitialdata && !foundScriptmodelchunk && !foundScriptsac {
-		return fmt.Errorf("%w: did not find all required html elements for parsing the doc: (initial data:%v,  modelchunk:%v, sac:%v)", ErrDocParsing, foundScriptinitialdata, foundScriptmodelchunk, foundScriptsac)
 
-	}
 	if d.Content == "" && len(d.Links) == 0 && len(d.ImageUrls) == 0 && d.OgTitle == "" {
 		return fmt.Errorf("%w: one of title, content, links, or images should be present - is this document empty?", ErrDocParsing)
 	}
 	if d.Created.IsZero() {
-		return fmt.Errorf("%w: doc creation timestamp (dct) was not identified", ErrDocParsing)
+		return ErrCreationTimestampNotExtracted
+	}
+	if d.Timestamp == "" {
+		return ErrServerTimestampNotExtracted
 	}
 	return nil
 }

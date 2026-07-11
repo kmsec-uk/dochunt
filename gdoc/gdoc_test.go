@@ -32,7 +32,7 @@ func TestGDocParse(t *testing.T) {
 		g.WithProvenance(e.Name())
 		err = g.ParseHtml(f)
 		if err != nil {
-			t.Fatal(err)
+			t.Errorf("%s: error parsing: %v", g.Provenance, err)
 		}
 		// fmt.Println(g)
 		if g.Id == "" {
